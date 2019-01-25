@@ -1,24 +1,27 @@
+from classes import Klasse
 
 class Char():
-    def __init__(self,name='temp',prepared=[]):
+    def __init__(self,klasse,name='temp'):
+        if isinstance(klasse,Klasse):
+            self.klasse=klasse
+        elif type(klasse)==str:
+            klasse=Klasse.from_str(klasse)
+            if klasse:
+                self.klasse=klasse
+            else:
+                raise ValueError
         self.name=name
-        self.prepared=prepared
 
-    def prepare_spell(self,spell):
-        if spell.name in self.prepared:
-            self.prepared.remove(spell.name)
-        else:
-            self.prepared.append(spell.name)
-
+    
     def to_json(self):
         return {
             'name': self.name,
-            'prepared': self.prepared
+            'class': self.klasse.to_json()
         }
 
     @staticmethod
     def from_json(data):
         name=data.get('name')
-        prepared=data.get('prepared')
+        klasse=Klasse.from_json(data.get('class'))
 
-        return Char(name,prepared)
+        return Char(klasse,name)
