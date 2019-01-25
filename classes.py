@@ -7,12 +7,12 @@ class Klasse():
     @staticmethod
     def from_json(data):
         klasse=data.pop('class')
-        if klasse=='cleric':
+        if klasse=='Cleric' or klasse=='cleric':
             return Cleric.from_json(data)
     
     @staticmethod
     def from_str(klasse):
-        if klasse=='cleric':
+        if klasse=='Cleric' or klasse=='cleric':
             return Cleric()
         else:
             return None
@@ -51,7 +51,7 @@ class Cleric(Klasse):
 
     def to_json(self):
         return {
-            'class':'cleric',
+            'class':'Cleric',
             'level':self.level,
             'prepared':self.prepared,
             'cantrips':self.cantrips
