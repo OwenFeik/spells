@@ -18,22 +18,25 @@ class Klasse():
             return None
 
 class Cleric(Klasse):
-    def __init__(self,level=1,prepared=None,cantrips=None):
+    def __init__(self,level=1,prepared=None,cantrips=None,slots_used=[0]*9):
         Klasse.__init__(self,level)
         self.prepared=[] if prepared is None else prepared
         self.cantrips=[] if cantrips is None else cantrips
 
         self.slots=get_spellslots('cleric',self.level)
-        self.slots_used=[0]*9
+        self.slots_used=slots_used
 
     def prepare_spell(self,spell):
         if spell.level==0:
-            self.cantrips.append(spell.name)
+            if spell.name in self.cantrips:
+                self.cantrips.remove(spell.name)
+            else:
+                self.cantrips.append(spell.name)
         elif spell.name in self.prepared:
             self.prepared.remove(spell.name)
         else:
             self.prepared.append(spell.name)
-    
+
     def cast_spell(self,spell):
         if spell.name in self.prepared:
             if self.slots_used[spell.level]<self.slots[spell.level]:
@@ -54,7 +57,8 @@ class Cleric(Klasse):
             'class':'Cleric',
             'level':self.level,
             'prepared':self.prepared,
-            'cantrips':self.cantrips
+            'cantrips':self.cantrips,
+            'slots_used':self.slots_used
         }
 
     @staticmethod
@@ -62,5 +66,6 @@ class Cleric(Klasse):
         level=data.get('level')
         prepared=data.get('prepared')
         cantrips=data.get('cantrips')
-        
-        return Cleric(level,prepared,cantrips)
+        slots_used=data.get('slots_used')
+
+        return Cleric(level,prepared,cantrips,slots_used)

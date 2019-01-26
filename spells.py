@@ -27,7 +27,8 @@ while True:
     if command.isnumeric():
         if opt and int(command)<=len(opt)+1:
             if opt[0]=='spell':
-                print_spell(sb.get_spell(opt[1][int(command)-1]))
+                arg=opt[1][int(command)-1]
+                command='info'
             elif opt[0]=='char':
                 arg=opt[1][int(command)-1]
                 command='char'
@@ -35,17 +36,21 @@ while True:
             print('That option isn\'t available right now.')
     
     if command=='exit':
-        with open(f'saves/{c.name.lower()}.json','w') as f:
-            json.dump(c.to_json(),f,indent=4)
+        if c:
+            with open(f'saves/{c.name.lower()}.json','w') as f:
+                json.dump(c.to_json(),f,indent=4)
         raise SystemExit
     elif command=='char' or command=='ch':
         if arg:
             try:
-                c=Char.from_json(load_character(arg.lower()))
-                print(f'Character loaded: {arg}.')
+                try:
+                    c=Char(**load_character(arg.lower()))
+                    print(f'Character loaded: {arg}.')
+                except ValueError:
+                    print(f'Ran into issue loading character {arg}.')
             except FileNotFoundError:
                 try:
-                    c=Char(arg)
+                    c=Char(**{'class':arg})
                     print(f'Temp character of class {arg} created. Use "rename <name>" for a new name.')
                 except ValueError:
                     print(f'No class {arg} found.')

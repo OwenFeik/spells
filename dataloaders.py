@@ -16,7 +16,6 @@ def load_character(name):
 def current_chars():
     saves=os.listdir('saves')
     chars=[]
-    corrupted=[]
     for save in saves:
         if '.json' in save:
             with open(f'saves/{save}','r') as f:
