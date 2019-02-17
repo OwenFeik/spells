@@ -1,18 +1,19 @@
-from dataloaders import get_spells
+import dataloaders
 import difflib
 
 class Spellbook():
-    def __init__(self,clss):
-        self.clss=clss
+    def __init__(self):
         self.build_spellbook()
             
     def build_spellbook(self):
-        self.spells=[Spell.from_json(spell) for spell in get_spells(self.clss)]
-        self.names=[spell.name for spell in self.spells]
+        self.names=[spell.get('name') for spell in dataloaders.get_spells()]
+        self._names=[name.lower() for name in self.names] # Used to match queries through difflib
+        self.spells=[] # Cache of spells to minimise file reads
 
     def get_spell(self,query):
         try:
-            target=difflib.get_close_matches(query,self.names,1)[0]
+            target=difflib.get_close_matches(query.lower(),self._names,1)[0]
+            target=self.names[self._names.index(target)] # Get the actual name of the spell
         except IndexError:
             return None
 
@@ -20,6 +21,10 @@ class Spellbook():
             if spell.name==target:
                 return spell
         
+        spell=Spell.from_json(dataloaders.get_spell(target))
+        self.spells.append(spell)
+        return spell
+
     def get_spells(self,queries):
         spells=[]
         for spell in queries:

@@ -5,9 +5,12 @@ def get_spellslots(clss,level):
     with open('resources/spellslots.json','r') as f:
         return json.load(f).get(clss).get(str(level))
         
-def get_spells(clss):
+def get_spells():
     with open('resources/spells.json','r') as f:
-        return json.load(f).get(clss)
+        return json.load(f)
+
+def get_spell(spell):
+    return get_spells().get(spell)
         
 def load_character(name):
     with open(f'saves/{name}.json','r') as f:

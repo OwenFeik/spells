@@ -5,20 +5,20 @@ from char import Char
 from spellbook import Spellbook
 from cli import print_spell,print_prepped,print_chars
 from dataloaders import load_character
+from utilities import clean_string
 
 c=None
-sb=Spellbook('cleric')
+sb=Spellbook()
 opt=[]
 
 while True:
     
     try:
-        inpt=input('> ')
+        inpt=clean_string(input('> '))
         command=re.search('[a-z0-9]+ ?',inpt).group(0)
         inpt=inpt[len(command):]
-        while command[len(command)-1]==' ':
-            command=command[:len(command)-1]
-        arg=inpt
+        command=clean_string(command)
+        arg=clean_string(inpt)
     except:
         command=''
         arg=''
