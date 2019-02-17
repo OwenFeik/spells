@@ -1,15 +1,18 @@
-from dataloaders import get_spellslots
+import dataloaders
 
 class Klasse():
     def __init__(self,level=1):
         self.level=level
         self.owner=None
 
-    def prepare_spell(self,spell): # Overridden by classes that prepare spells
+    def prepare_spell(self,*args): # Overridden by classes that prepare spells
         print('This class can\'t prepare spells!')
 
-    def cast_spell(self,spell): # Overridden by spellcasting classes
+    def cast_spell(self,*args): # Overridden by spellcasting classes
         print('This class can\'t cast spells!')
+
+    def spend_sorcery_points(self,*args): # Overriden by sorcerer
+        print('Only Sorcerers have sorcery points.')
 
     @staticmethod
     def from_json(data):
@@ -31,7 +34,7 @@ class Cleric(Klasse):
         self.prepared=[] if prepared is None else prepared
         self.cantrips=[] if cantrips is None else cantrips
 
-        self.slots=get_spellslots('cleric',self.level)
+        self.slots=dataloaders.get_spellslots('cleric',self.level)
         self.slots_used=slots_used
 
     def prepare_spell(self,spell):
@@ -79,12 +82,14 @@ class Cleric(Klasse):
         return Cleric(level,prepared,cantrips,slots_used)
 
 class Sorcerer(Klasse):
-    def __init__(self,level=1,spells=None,slots_used=[0]*9):
+    def __init__(self,level=1,spells=None,slots_used=[0]*9,sorcery_points_used=0):
         Klasse.__init__(self,level)
         self.klasse='sorcerer'
         self.spells=[] if spells is None else spells
-        self.slots=get_spellslots('sorcerer',self.level)
+        self.slots=dataloaders.get_spellslots('sorcerer',self.level)
         self.slots_used=slots_used
+        self.sorcery_points_max=dataloaders.get_sorcery_points(self.level)
+        self.sorcery_points_used=sorcery_points_used
 
     def cast_spell(self,spell):
         if spell.name in self.spells:
@@ -98,6 +103,13 @@ class Sorcerer(Klasse):
         else:
             print(f'{self.owner.name} doesn\'t know {spell.name}.')
 
+    def spend_sorcery_points(self,points):
+        if points<=self.sorcery_points_max-self.sorcery_points_used:
+            self.sorcery_points_used+=points
+            print(f'Spent {points} sorcery points. {self.sorcery_points_max-self.sorcery_points_used} points remaining.')
+        else:
+            print(f'Not enough sorcery points. Only {self.sorcery_points_max-self.sorcery_points_used} points remaining.')
+    
     def long_rest(self):
         self.slots_used=[0]*9
 

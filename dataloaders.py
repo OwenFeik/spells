@@ -2,8 +2,8 @@ import json
 import os # Check files in saves folder
 
 def get_spellslots(clss,level):
-    with open('resources/spellslots.json','r') as f:
-        return json.load(f).get(clss).get(str(level))
+    with open(f'resources/{clss}.json','r') as f:
+        return json.load(f).get('spellslots').get(str(level))
         
 def get_spells():
     with open('resources/spells.json','r') as f:
@@ -28,3 +28,7 @@ def current_chars():
             with open(f'saves/{save}','r') as f:
                 chars.append(json.load(f))
     return chars
+
+def get_sorcery_points(level):
+    with open(f'resources/sorcerer.json','r') as f:
+        return json.load(f).get('sorc_points').get(str(level))
