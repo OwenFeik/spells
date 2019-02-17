@@ -36,6 +36,36 @@ class Char():
         else:
             self.stats=Stats(10,10,10,10,10,10)
     
+        max_hp=kwargs.get('max_hp')
+        if max_hp:
+            if type(max_hp)==int:
+                self.max_hp=max_hp
+            else:
+                raise ValueError
+    
+        current_hp=kwargs.get('current_hp')
+        if current_hp:
+            if type(current_hp)==int:
+                self.current_hp=current_hp
+            else:
+                raise ValueError
+    
+    def long_rest(self):
+        for klasse in self.klasses:
+            klasse.long_rest()
+        if hasattr(self,'current_hp') and hasattr(self,'max_hp'):
+            self.current_hp=self.max_hp
+
+    def cast_spell(self,spell,klasse=None):
+        if not self.klasses:
+            print(f'The character {self.name} can\'t cast spells because it doesn\'t have a class!')
+        elif klasse:
+            for kls in self.klasses:
+                if kls.klasse==klasse.lower():
+                    kls.cast_spell(spell)
+        else:
+            self.klasses[0].cast_spell(spell)
+
     def to_json(self):
         data={}
         if hasattr(self,'name'):
@@ -44,5 +74,13 @@ class Char():
             data['class']=[klasse.to_json() for klasse in self.klasses]
         if hasattr(self,'stats'):
             data['stats']=self.stats.to_json()
+        if hasattr(self,'max_hp'):
+            data['max_hp']=self.max_hp
+        if hasattr(self,'current_hp'):
+            data['current_hp']=self.current_hp
 
         return data
+    
+    @staticmethod
+    def from_json(data):
+        return Char(**data)

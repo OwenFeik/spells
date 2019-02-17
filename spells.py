@@ -1,13 +1,12 @@
-import re
 import json
 
 from char import Char
 from spellbook import Spellbook
 from cli import print_spell,print_prepped,print_chars
-from dataloaders import load_character
+from dataloaders import load_character,save_character
 from utilities import clean_string
 
-c=None
+c=None # Current player character
 try:
     sb=Spellbook() # Utility for retrieving spell information
 except FileNotFoundError:
@@ -38,14 +37,13 @@ while True:
     
     if command=='exit':
         if c:
-            with open(f'saves/{c.name.lower()}.json','w') as f:
-                json.dump(c.to_json(),f,indent=4)
+            save_character(c)
         raise SystemExit
     elif command=='char' or command=='ch':
         if args:
             try:
                 try:
-                    c=Char(**load_character(args[0].lower()))
+                    c=Char.from_json(load_character(args[0].lower()))
                     print(f'Character loaded: {args[0]}.')
                 except ValueError:
                     print(f'Ran into issue loading character {args[0]}.')
@@ -84,7 +82,7 @@ while True:
         if c:
             spell=sb.get_spell(args[0])
             if spell:
-                c.klasse.cast_spell(spell)
+                c.cast_spell(spell)
             else:
                 print(f'No spell {args[0]} found.')
         else:
@@ -93,7 +91,7 @@ while True:
         c.name=args[0]
     elif command=='rest':
         if c:
-            c.klasse.long_rest()
+            c.long_rest()
         else:
             print('To rest, start or load a character with "c <class>".')
     elif command=='chars':

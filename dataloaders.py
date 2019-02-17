@@ -14,7 +14,11 @@ def get_spell(spell):
         
 def load_character(name):
     with open(f'saves/{name}.json','r') as f:
-        return  json.load(f)
+        return json.load(f)
+
+def save_character(char):
+    with open(f'saves/{char.name.lower()}.json','w') as f:
+        json.dump(char.to_json(),f,indent=4)
 
 def current_chars():
     saves=os.listdir('saves')
