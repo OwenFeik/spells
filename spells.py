@@ -8,29 +8,30 @@ from dataloaders import load_character
 from utilities import clean_string
 
 c=None
-sb=Spellbook()
-opt=[]
+try:
+    sb=Spellbook() # Utility for retrieving spell information
+except FileNotFoundError:
+    print('Warning: No SpellBook available.')
+opt=[] # Options which persist after certain functions
 
 while True:
     
     try:
-        inpt=clean_string(input('> '))
-        command=re.search('[a-z0-9]+ ?',inpt).group(0)
-        inpt=inpt[len(command):]
-        command=clean_string(command)
-        arg=clean_string(inpt)
+        inpt=[clean_string(string) for string in input('> ').split(' ') if string != '']
+        command=inpt.pop(0)
+        args=inpt
     except:
         command=''
-        arg=''
+        args=[]
 
     
     if command.isnumeric():
         if opt and int(command)<=len(opt)+1:
             if opt[0]=='spell':
-                arg=opt[1][int(command)-1]
+                args=[opt[1][int(command)-1]]
                 command='info'
             elif opt[0]=='char':
-                arg=opt[1][int(command)-1]
+                args=[opt[1][int(command)-1]]
                 command='char'
         else:
             print('That option isn\'t available right now.')
@@ -41,33 +42,33 @@ while True:
                 json.dump(c.to_json(),f,indent=4)
         raise SystemExit
     elif command=='char' or command=='ch':
-        if arg:
+        if args:
             try:
                 try:
-                    c=Char(**load_character(arg.lower()))
-                    print(f'Character loaded: {arg}.')
+                    c=Char(**load_character(args[0].lower()))
+                    print(f'Character loaded: {args[0]}.')
                 except ValueError:
-                    print(f'Ran into issue loading character {arg}.')
+                    print(f'Ran into issue loading character {args[0]}.')
             except FileNotFoundError:
                 try:
-                    c=Char(**{'class':arg})
-                    print(f'Temp character of class {arg} created. Use "rename <name>" for a new name.')
+                    c=Char(**{'class':args[0]})
+                    print(f'Temp character of class {args[0]} created. Use "rename <name>" for a new name.')
                 except ValueError:
-                    print(f'No class {arg} found.')
+                    print(f'No class {args[0]} found.')
         else:
             if c:
                 print(f'Current character: {c.name}.')
             else:
                 print('No current character.')
     elif command=='info' or command=='i':
-        spell=sb.get_spell(arg)
+        spell=sb.get_spell(args[0])
         if spell:
             print_spell(spell)
         else:
             print('Sorry, I couldn\'t find that spell.')
     elif command=='prep' or command=='p':
         if c:
-            spell=sb.get_spell(arg)
+            spell=sb.get_spell(args[0])
             if spell:
                 c.klasse.prepare_spell(spell)
             else:
@@ -81,15 +82,15 @@ while True:
             print('To prepare spells, start a character with "c <class>".')
     elif command=='c' or command=='cast':
         if c:
-            spell=sb.get_spell(arg)
+            spell=sb.get_spell(args[0])
             if spell:
                 c.klasse.cast_spell(spell)
             else:
-                print(f'No spell {arg} found.')
+                print(f'No spell {args[0]} found.')
         else:
             print('To cast spells, start a character with "char <class>".')
     elif command=='rename':
-        c.name=arg
+        c.name=args[0]
     elif command=='rest':
         if c:
             c.klasse.long_rest()

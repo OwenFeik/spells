@@ -1,5 +1,5 @@
 import json
-import os
+import os # Check files in saves folder
 
 def get_spellslots(clss,level):
     with open('resources/spellslots.json','r') as f:
