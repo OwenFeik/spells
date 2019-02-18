@@ -5,15 +5,6 @@ class Klasse():
         self.level=level
         self.owner=None
 
-    def prepare_spell(self,*args): # Overridden by classes that prepare spells
-        print('This class can\'t prepare spells!')
-
-    def cast_spell(self,*args): # Overridden by spellcasting classes
-        print('This class can\'t cast spells!')
-
-    def spend_sorcery_points(self,*args): # Overriden by sorcerer
-        print('Only Sorcerers have sorcery points.')
-
     @staticmethod
     def from_json(data):
         klasse=data.pop('class')
@@ -21,9 +12,11 @@ class Klasse():
             return Cleric.from_json(data)
     
     @staticmethod
-    def from_str(klasse):
+    def from_str(klasse,level=1):
         if klasse=='Cleric' or klasse=='cleric':
-            return Cleric()
+            return Cleric(level)
+        elif klasse=='Sorcerer' or klasse=='sorcerer':
+            return Sorcerer(level)
         else:
             return None
 
@@ -36,6 +29,14 @@ class Cleric(Klasse):
 
         self.slots=dataloaders.get_spellslots('cleric',self.level)
         self.slots_used=slots_used
+
+    def has_spell_slot(self,level):
+        if level==0:
+            return True
+        if self.slots_used[level-1]<self.slots[level-1]:
+            return True
+        else:
+            return False
 
     def prepare_spell(self,spell):
         if spell.level==0:
@@ -50,8 +51,8 @@ class Cleric(Klasse):
 
     def cast_spell(self,spell):
         if spell.name in self.prepared:
-            if self.slots_used[spell.level]<self.slots[spell.level]:
-                self.slots_used[spell.level]+=1
+            if self.has_spell_slot(spell.level):
+                self.slots_used[spell.level-1]+=1
                 print(f'You cast {spell.name}.')
             else:
                 print(f'No level {spell.level} slots available.')
@@ -91,6 +92,14 @@ class Sorcerer(Klasse):
         self.sorcery_points_max=dataloaders.get_sorcery_points(self.level)
         self.sorcery_points_used=sorcery_points_used
 
+    def has_spell_slot(self,level):
+        if level==0:
+            return True
+        if self.slots_used[level-1]<self.slots[level-1]:
+            return True
+        else:
+            return False
+
     def cast_spell(self,spell):
         if spell.name in self.spells:
             if spell.level==0:
@@ -110,8 +119,19 @@ class Sorcerer(Klasse):
         else:
             print(f'Not enough sorcery points. Only {self.sorcery_points_max-self.sorcery_points_used} points remaining.')
     
+    def convert_spell_slots(self,level):
+        if self.has_spell_slot(level):
+            if self.sorcery_points_used-level>=0:
+                self.sorcery_points_used-=level
+                self.slots_used[level-1]+=1
+            else:
+                print(f'Currently have {self.sorcery_points_max-self.sorcery_points_used} sorcery points out of {self.sorcery_points_max}.')
+        else:
+            print(f'No spell slot of level {level} available.')
+
     def long_rest(self):
         self.slots_used=[0]*9
+        self.sorcery_points_used=0
 
     def to_json(self):
         return {

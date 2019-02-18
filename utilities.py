@@ -4,4 +4,3 @@ def clean_string(string):
     while string[len(string)-1]==' ':
         string=string[:len(string)-1]
     return string
-    

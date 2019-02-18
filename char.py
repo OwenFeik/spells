@@ -1,5 +1,6 @@
 from classes import Klasse
 from stats import Stats
+from utilities import clean_string
 
 class Char():
     def __init__(self,**kwargs):
@@ -64,8 +65,11 @@ class Char():
                 if kls.klasse==klasse.lower():
                     kls.cast_spell(spell)
         else:
-            self.klasses[0].cast_spell(spell)
-
+            if hasattr(self.klasses[0],'cast_spell'): 
+                self.klasses[0].cast_spell(spell)
+            else:
+                print(f'The class {self.klasses[0].klasse} can\'t cast spells')
+                    
     def to_json(self):
         data={}
         if hasattr(self,'name'):
@@ -84,3 +88,36 @@ class Char():
     @staticmethod
     def from_json(data):
         return Char(**data)
+
+    @staticmethod
+    def from_wizard():
+        prompt='What is you characters name? '
+        current='name'
+        data={}
+        while True:
+            # try:
+            inpt=[clean_string(string) for string in input(f'{prompt}> ').split(' ') if string != '']
+            
+            if current=='name':
+                data['name']=inpt[0]
+                prompt='Enter your characters classes and levels: <class> <level> <class> <level> '
+                current='class'
+            elif current=='class':
+                data['classes']=[]
+                if len(inpt)%2==0 and not len(inpt)==0:
+                    for i in range(0,int(len(inpt)/2)):
+                        if inpt[2*i].lower() in ['cleric','sorcerer']:
+                            if inpt[(2*i)+1].isnumeric():
+                                data['classes'].append(Klasse.from_str(inpt[2*i],inpt[(2*i)+1]))
+                            else:
+                                prompt='Enter the characters classes and levels: e.g. Cleric 1 wizard 2 '
+                        else:
+                            print(f'Class {inpt[2*i]} not available.')
+                    break
+                else:
+                    prompt='Enter the characters classes and levels: e.g. Cleric 1 wizard 2'
+
+        # except:
+            # print('Inadmissable input.')
+
+        return Char.from_json(data)

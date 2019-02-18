@@ -57,7 +57,7 @@ while True:
             if c:
                 print(f'Current character: {c.name}.')
             else:
-                print('No current character.')
+                c=Char.from_wizard()
     elif command=='info' or command=='i':
         spell=sb.get_spell(args[0])
         if spell:
