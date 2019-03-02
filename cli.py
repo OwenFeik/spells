@@ -1,7 +1,62 @@
+from os import get_terminal_size
+
 from dataloaders import current_chars
+from utilities import clean_string
 
 def print_spell(spell):
-    print(str(spell))
+    width=get_terminal_size()[0]
+    if width<60:
+        pass
+    elif width<120:
+        width=int(0.8*width)
+    else:
+        width=int(0.6*width)
+
+    out=''
+
+    if len(spell.name)+len(spell.school)<width:
+        out=f'\n{spell.name} | {spell.school}'
+    else:
+        out=f'\n{spell.name}\n{spell.school}'
+
+    if len(spell.cast)+len(spell.rnge)<width:
+        out+=f'\n{spell.cast} | {spell.rnge}'
+    else:
+        out+=f'\n{spell.cast}\n{spell.rnge}'
+    
+    if len(spell.components)+len(spell.duration)<width:
+        out+=f'\n{spell.components} | {spell.duration}'
+    else:
+        out+=f'\n{spell.components}\n{spell.duration}'
+
+    if len(spell.desc)>width:
+        out+='\n'
+        desc=spell.desc
+
+        line=''
+        word=''
+        for c in desc:
+            if len(line)+len(word)>width:
+                out+='\n'+clean_string(line)
+                line=''
+
+            if c==' ':
+                line+=f' {word}'
+                word=''
+            elif c=='\n':
+                line+=f' {word}'
+                word=''
+                out+='\n'+clean_string(line)
+                line=''
+            else:
+                word+=c
+
+        out+='\n'+clean_string(line+' '+word)
+    else:
+        out+=f'\n\n{spell.desc}\n'
+
+    out+='\n'
+    print(out)
 
 def print_prepped(char,spellbook):
     prepared=spellbook.get_spells(char.klasse.prepared)

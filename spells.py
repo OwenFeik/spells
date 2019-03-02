@@ -1,5 +1,3 @@
-import json
-
 from char import Char
 from spellbook import Spellbook
 from cli import print_spell,print_prepped,print_chars
@@ -23,7 +21,7 @@ while True:
         command=''
         args=[]
 
-    
+    # try:
     if command.isnumeric():
         if opt and int(command)<=len(opt)+1:
             if opt[0]=='spell':
@@ -59,7 +57,8 @@ while True:
             else:
                 c=Char.from_wizard()
     elif command=='info' or command=='i':
-        spell=sb.get_spell(args[0])
+        arg=' '.join(args)
+        spell=sb.get_spell(arg)
         if spell:
             print_spell(spell)
         else:
@@ -98,3 +97,5 @@ while True:
         opt=print_chars()
     else:
         print('Sorry, I didn\'t understand that.')
+    # except Exception as e:
+    #     print(f'Ran into a problem with that command: {e}')
