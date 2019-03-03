@@ -14,20 +14,31 @@ def print_spell(spell):
 
     out=''
 
-    if len(spell.name)+len(spell.school)<width:
-        out=f'\n{spell.name} | {spell.school}'
+    if spell.level==0:
+        school=spell.school+' Cantrip'
+    elif spell.level==1:
+        school='1st Level '+spell.school
+    elif spell.level==2:
+        school='2nd Level '+spell.school
+    elif spell.level==3:
+        school='3rd Level '+spell.school
     else:
-        out=f'\n{spell.name}\n{spell.school}'
+        school=f'{spell.level}th Level {spell.school}'
 
-    if len(spell.cast)+len(spell.rnge)<width:
-        out+=f'\n{spell.cast} | {spell.rnge}'
+    if len(spell.name)+len(school)<width:
+        out=f'\n{spell.name} | {school}'
     else:
-        out+=f'\n{spell.cast}\n{spell.rnge}'
+        out=f'\n{spell.name}\n{school}'
+
+    if len(spell.cast)+len(spell.rnge)+24<width:
+        out+=f'\nCasting Time: {spell.cast} | Range: {spell.rnge}'
+    else:
+        out+=f'\nCasting Time: {spell.cast}\nRange: {spell.rnge}'
     
-    if len(spell.components)+len(spell.duration)<width:
-        out+=f'\n{spell.components} | {spell.duration}'
+    if len(spell.components)+len(spell.duration)+25<width:
+        out+=f'\nComponents: {spell.components} | Duration: {spell.duration}'
     else:
-        out+=f'\n{spell.components}\n{spell.duration}'
+        out+=f'\nComponents: {spell.components}\nDuration: {spell.duration}'
 
     if len(spell.desc)>width:
         out+='\n'

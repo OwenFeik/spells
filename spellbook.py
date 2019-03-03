@@ -6,9 +6,12 @@ class Spellbook():
         self.build_spellbook()
             
     def build_spellbook(self):
-        self.spells=[Spell.from_json(spell) for spell in dataloaders.get_spells()]
-        self.names=[spell.name for spell in self.spells]
-        self._names=[name.lower() for name in self.names] # Used to match queries through difflib
+        try:
+            self.spells=[Spell.from_json(spell) for spell in dataloaders.get_spells()]
+            self.names=[spell.name for spell in self.spells]
+            self._names=[name.lower() for name in self.names] # Used to match queries through difflib
+        except:
+            raise ValueError
 
     def get_spell(self,query):
         target=difflib.get_close_matches(query.lower(),self._names,1)
