@@ -1,7 +1,73 @@
+from os import get_terminal_size
+
 from dataloaders import current_chars
+from utilities import clean_string
 
 def print_spell(spell):
-    print(str(spell))
+    width=get_terminal_size()[0]
+    if width<60:
+        pass
+    elif width<120:
+        width=int(0.8*width)
+    else:
+        width=int(0.6*width)
+
+    out=''
+
+    if spell.level==0:
+        school=spell.school+' Cantrip'
+    elif spell.level==1:
+        school='1st Level '+spell.school
+    elif spell.level==2:
+        school='2nd Level '+spell.school
+    elif spell.level==3:
+        school='3rd Level '+spell.school
+    else:
+        school=f'{spell.level}th Level {spell.school}'
+
+    if len(spell.name)+len(school)<width:
+        out=f'\n{spell.name} | {school}'
+    else:
+        out=f'\n{spell.name}\n{school}'
+
+    if len(spell.cast)+len(spell.rnge)+24<width:
+        out+=f'\nCasting Time: {spell.cast} | Range: {spell.rnge}'
+    else:
+        out+=f'\nCasting Time: {spell.cast}\nRange: {spell.rnge}'
+    
+    if len(spell.components)+len(spell.duration)+25<width:
+        out+=f'\nComponents: {spell.components} | Duration: {spell.duration}'
+    else:
+        out+=f'\nComponents: {spell.components}\nDuration: {spell.duration}'
+
+    if len(spell.desc)>width:
+        out+='\n'
+        desc=spell.desc
+
+        line=''
+        word=''
+        for c in desc:
+            if len(line)+len(word)>width:
+                out+='\n'+clean_string(line)
+                line=''
+
+            if c==' ':
+                line+=f' {word}'
+                word=''
+            elif c=='\n':
+                line+=f' {word}'
+                word=''
+                out+='\n'+clean_string(line)
+                line=''
+            else:
+                word+=c
+
+        out+='\n'+clean_string(line+' '+word)
+    else:
+        out+=f'\n\n{spell.desc}\n'
+
+    out+='\n'
+    print(out)
 
 def print_prepped(char,spellbook):
     prepared=spellbook.get_spells(char.klasse.prepared)
