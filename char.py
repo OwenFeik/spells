@@ -106,9 +106,9 @@ class Char():
                 data['classes']=[]
                 if len(inpt)%2==0 and not len(inpt)==0:
                     for i in range(0,int(len(inpt)/2)):
-                        if inpt[2*i].lower() in ['cleric','sorcerer']:
+                        if inpt[2*i].lower() in Klasse.klasse_list():
                             if inpt[(2*i)+1].isnumeric():
-                                data['classes'].append(Klasse.from_str(inpt[2*i],inpt[(2*i)+1]))
+                                data['classes'].append(Klasse.from_json({'class':inpt[2*i].lower(),'level':int(inpt[(2*i)+1])}))
                             else:
                                 prompt='Enter the characters classes and levels: e.g. Cleric 1 wizard 2 '
                         else:

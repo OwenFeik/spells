@@ -6,17 +6,23 @@ class Klasse():
         self.owner=None
 
     @staticmethod
+    def klasse_list():
+        return ['cleric','sorcerer']
+
+    @staticmethod
     def from_json(data):
         klasse=data.pop('class')
         if klasse=='Cleric' or klasse=='cleric':
             return Cleric.from_json(data)
-    
+        if klasse=='Sorcerer' or klasse=='sorcerer':
+            return Sorcerer.from_json(data)
+
     @staticmethod
-    def from_str(klasse,level=1):
+    def from_str(klasse):
         if klasse=='Cleric' or klasse=='cleric':
-            return Cleric(level)
+            return Cleric()
         elif klasse=='Sorcerer' or klasse=='sorcerer':
-            return Sorcerer(level)
+            return Sorcerer()
         else:
             return None
 
