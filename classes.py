@@ -10,12 +10,14 @@ class Klasse():
         return ['cleric','sorcerer']
 
     @staticmethod
-    def from_json(data):
+    def from_json(data,sb=None):
         klasse=data.pop('class')
-        if klasse=='Cleric' or klasse=='cleric':
-            return Cleric.from_json(data)
-        if klasse=='Sorcerer' or klasse=='sorcerer':
-            return Sorcerer.from_json(data)
+        if not sb:
+            print('A spellbook is required to load a spellcasting class.')
+        elif klasse=='Cleric' or klasse=='cleric':
+            return Cleric.from_json(data,sb)
+        elif klasse=='Sorcerer' or klasse=='sorcerer':
+            return Sorcerer.from_json(data,sb)
 
     @staticmethod
     def from_str(klasse):
@@ -46,17 +48,17 @@ class Cleric(Klasse):
 
     def prepare_spell(self,spell):
         if spell.level==0:
-            if spell.name in self.cantrips:
-                self.cantrips.remove(spell.name)
+            if spell in self.cantrips:
+                self.cantrips.remove(spell)
             else:
-                self.cantrips.append(spell.name)
-        elif spell.name in self.prepared:
-            self.prepared.remove(spell.name)
+                self.cantrips.append(spell)
+        elif spell in self.prepared:
+            self.prepared.remove(spell)
         else:
-            self.prepared.append(spell.name)
+            self.prepared.append(spell)
 
     def cast_spell(self,spell):
-        if spell.name in self.prepared:
+        if spell in self.prepared:
             if self.has_spell_slot(spell.level):
                 self.slots_used[spell.level-1]+=1
                 print(f'You cast {spell.name}.')
@@ -74,16 +76,16 @@ class Cleric(Klasse):
         return {
             'class':self.klasse,
             'level':self.level,
-            'prepared':self.prepared,
-            'cantrips':self.cantrips,
+            'prepared':[spell.name for spell in self.prepared],
+            'cantrips':[spell.name for spell in self.cantrips],
             'slots_used':self.slots_used
         }
 
     @staticmethod
-    def from_json(data):
+    def from_json(data,sb):
         level=data.get('level')
-        prepared=data.get('prepared')
-        cantrips=data.get('cantrips')
+        prepared=[sb.get_spell(spell) for spell in data.get('prepared')]
+        cantrips=[sb.get_spell(spell) for spell in data.get('cantrips')]
         slots_used=data.get('slots_used')
 
         return Cleric(level,prepared,cantrips,slots_used)
@@ -107,7 +109,7 @@ class Sorcerer(Klasse):
             return False
 
     def cast_spell(self,spell):
-        if spell.name in self.spells:
+        if spell in self.spells:
             if spell.level==0:
                 print(f'You cast {spell.name}.')
             if self.slots_used[spell.level-1]<self.slots[spell.level-1]:
@@ -143,14 +145,14 @@ class Sorcerer(Klasse):
         return {
             'class':self.klasse,
             'level':self.level,
-            'spells':self.spells,
+            'spells':[spell.name for spell in self.spells],
             'slots_used':self.slots_used
         }
 
     @staticmethod
-    def from_json(data):
+    def from_json(data,sb):
         level=data.get('level')
-        spells=data.get('spells')
+        spells=[sb.get_spell(spell) for spell in data.get('spells')]
         slots_used=data.get('slots_used')
 
         return Sorcerer(level,spells,slots_used)

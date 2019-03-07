@@ -46,7 +46,10 @@ while True:
             if args:
                 try:
                     try:
-                        c=Char.from_json(load_character(args[0].lower()))
+                        if sb:
+                            c=Char.from_json(load_character(args[0].lower()).update({'sb':sb}))
+                        else:
+                            c=Char.from_json(load_character(args[0].lower()))
                         print(f'Character loaded: {args[0]}.')
                     except ValueError:
                         print(f'Ran into issue loading character {args[0]}.')

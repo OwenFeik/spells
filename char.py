@@ -18,7 +18,10 @@ class Char():
                 klasse.owner=self
                 self.klasses.append(klasse)
             elif type(klasse)==dict:
-                klasse=Klasse.from_json(klasse)
+                if kwargs.get('sb'):
+                    klasse=Klasse.from_json(klasse,kwargs.get('sb'))
+                else:
+                    klasse=Klasse.from_json(klasse)
                 klasse.owner=self
                 self.klasses.append(klasse)
             elif type(klasse)==str:
