@@ -14,6 +14,8 @@ def load_character(name):
         return json.load(f)
 
 def save_character(char):
+    if not os.path.exists('saves'):
+        os.mkdir('saves')
     with open(f'saves/{char.name.lower()}.json','w') as f:
         json.dump(char.to_json(),f,indent=4)
 

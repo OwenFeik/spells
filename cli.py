@@ -40,7 +40,7 @@ def print_spell(spell):
     else:
         components=printable_paragraph('Components: '+spell.components,width)
         duration=printable_paragraph('Duration: '+spell.duration,width)
-        out+=f'{components}\n{duration}'
+        out+=f'\n{components}\n{duration}'
 
     out+=f'\n{printable_paragraph(spell.desc,width)}\n'
 
