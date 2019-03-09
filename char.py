@@ -60,6 +60,28 @@ class Char():
         if hasattr(self,'current_hp') and hasattr(self,'max_hp'):
             self.current_hp=self.max_hp
 
+    def prepare_spell(self,spell,klasse=None):
+        if not self.klasses:
+            print(f'The character {self.name} can\'t prepare spells because it doesn\'t have a class!')
+        elif klasse:
+            for kls in self.klasses:
+                if kls.klasse==klasse.lower():
+                    kls.prepare_spell(spell)
+                    break
+        else:
+            if len(self.klasses)==1 and hasattr(self.klasses[0],'prepare_spell'):
+                self.klasses[0].prepare_spell(spell)
+            elif len(self.klasses)==1:
+                print(f'The class {self.klasses[0].klasse} can\'t cast spells')
+            else:
+                klasses=[kls.klasse for kls in self.klasses if hasattr(kls,'prepare_spell')]
+                out=f'\nChoose a class to prepare {spell.name} with.\n'
+                for i,kls in enumerate(klasses):
+                    out+=f'\n[{i+1}] {kls}'
+                print(out+'\n')
+
+                return ('class',klasses,'prep',spell.name)
+            
     def cast_spell(self,spell,klasse=None):
         if not self.klasses:
             print(f'The character {self.name} can\'t cast spells because it doesn\'t have a class!')
@@ -68,17 +90,25 @@ class Char():
                 if kls.klasse==klasse.lower():
                     kls.cast_spell(spell)
         else:
-            if hasattr(self.klasses[0],'cast_spell'): 
+            if len(self.klasses)==1 and hasattr(self.klasses[0],'cast_spell'): 
                 self.klasses[0].cast_spell(spell)
-            else:
+            elif len(self.klasses)==1:
                 print(f'The class {self.klasses[0].klasse} can\'t cast spells')
+            else:
+                klasses=[kls.klasse for kls in self.klasses if hasattr(kls,'cast_spell')]
+                out=f'Choose a class to cast {spell.name} with.\n'
+                for i,kls in enumerate(klasses):
+                    out+=f'\n[{i+1}] {kls}'
+                print(out+'\n')
+
+                return ('class',klasses,'cast',spell.name)
                     
     def to_json(self):
         data={}
         if hasattr(self,'name'):
             data['name']=self.name
-        if hasattr(self,'klasse'):
-            data['class']=[klasse.to_json() for klasse in self.klasses]
+        if hasattr(self,'klasses'):
+            data['classes']=[klasse.to_json() for klasse in self.klasses]
         if hasattr(self,'stats'):
             data['stats']=self.stats.to_json()
         if hasattr(self,'max_hp'):

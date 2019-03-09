@@ -1,7 +1,7 @@
 from os import get_terminal_size
 
 from dataloaders import current_chars
-from utilities import clean_string,printable_paragraph
+from utilities import clean_string,printable_paragraph,level_prefix
 
 def print_spell(spell):
     width=get_terminal_size()[0]
@@ -16,14 +16,8 @@ def print_spell(spell):
 
     if spell.level==0:
         school=spell.school+' Cantrip'
-    elif spell.level==1:
-        school='1st Level '+spell.school
-    elif spell.level==2:
-        school='2nd Level '+spell.school
-    elif spell.level==3:
-        school='3rd Level '+spell.school
     else:
-        school=f'{spell.level}th Level {spell.school}'
+        school=f'{level_prefix(spell.level)} {spell.school}'
 
     if len(spell.name)+len(school)<width:
         out=f'\n{spell.name} | {school}'
@@ -46,18 +40,22 @@ def print_spell(spell):
 
     print(out)
 
-def print_prepped(char,spellbook):
-    prepared=spellbook.get_spells(char.klasse.prepared)
-    cantrips=spellbook.get_spells(char.klasse.cantrips)
-    prepped='\nPrepared:\n'
-    for i in range(0,len(prepared)):
-        prepped+=f'\n[{i+1}] {prepared[i].name} | {prepared[i].school}'
-    prepped+='\n\nCantrips:\n'
-    for i in range(0,len(cantrips)):
-        prepped+=f'\n[{i+1+len(prepared)}] {cantrips[i].name} | {cantrips[i].school}'
-    prepped=prepped[1:]
-    print(f"\n{char.name}:\n{prepped}\n")
-    opt=[spell.name for spell in prepared]+[spell.name for spell in cantrips]
+def print_prepped(char):
+    out=''
+    opt=[]
+    for klasse in [klasse for klasse in char.klasses if hasattr(klasse,'spells')]:
+        out+=f'\n\n{klasse.klasse.capitalize()}:\n'
+        spells={i:[] for i in range(0,10)}
+        for spell in klasse.spells:
+            spells[spell.level].append(spell.name)
+        for i in range(0,10):
+            if spells[i]:
+                out+=f'\n\t{level_prefix(i)}:'
+                for spell in spells[i]:
+                    opt.append(spell)
+                    out+=f'\n\t\t[{len(opt)}] {spell}'
+                
+    print(out[1:]+'\n')
     return ('spell',opt)
 
 def print_chars():

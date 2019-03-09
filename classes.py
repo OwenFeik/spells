@@ -1,4 +1,4 @@
-import dataloaders
+import constants
 
 class Klasse():
     def __init__(self,level=1):
@@ -13,9 +13,9 @@ class Klasse():
     def from_json(data,sb=None):
         klasse=data.pop('class')
         
-        if klasse=='Cleric' or klasse=='cleric':
+        if klasse in ['Cleric','cleric']:
             return Cleric.from_json(data,sb)
-        elif klasse=='Sorcerer' or klasse=='sorcerer':
+        elif klasse in ['Sorcerer','sorcerer']:
             return Sorcerer.from_json(data,sb)
 
     @staticmethod
@@ -28,14 +28,20 @@ class Klasse():
             return None
 
 class Cleric(Klasse):
-    def __init__(self,level=1,prepared=None,cantrips=None,slots_used=[0]*9):
+    def __init__(self,level=1,prepared=None,cantrips=None,slots_used=None):
         Klasse.__init__(self,level)
         self.klasse='cleric'
         self.prepared=[] if prepared is None else prepared
         self.cantrips=[] if cantrips is None else cantrips
 
-        self.slots=dataloaders.get_spellslots('cleric',self.level)
-        self.slots_used=slots_used
+        self.slots=constants.spellslots[self.level]
+        self.slots_used=slots_used if slots_used is not None else [0]*9
+
+    @property
+    def spells(self):
+        spells=self.cantrips[:]
+        spells.extend(self.prepared)
+        return spells
 
     def has_spell_slot(self,level):
         if level==0:
@@ -49,12 +55,16 @@ class Cleric(Klasse):
         if spell.level==0:
             if spell in self.cantrips:
                 self.cantrips.remove(spell)
+                print(f'Forgot the cantrip {spell.name}.')
             else:
                 self.cantrips.append(spell)
+                print(f'Learnt the cantrip {spell.name}.')
         elif spell in self.prepared:
             self.prepared.remove(spell)
+            print(f'Removed {spell.name} from prepared.')
         else:
             self.prepared.append(spell)
+            print(f'Prepared {spell.name}.')
 
     def cast_spell(self,spell):
         if spell in self.prepared:
@@ -96,14 +106,22 @@ class Cleric(Klasse):
         return Cleric(level,prepared,cantrips,slots_used)
 
 class Sorcerer(Klasse):
-    def __init__(self,level=1,spells=None,slots_used=[0]*9,sorcery_points_used=0):
+    def __init__(self,level=1,spells=None,slots_used=None,sorcery_points_used=0):
         Klasse.__init__(self,level)
         self.klasse='sorcerer'
         self.spells=[] if spells is None else spells
-        self.slots=dataloaders.get_spellslots('sorcerer',self.level)
-        self.slots_used=slots_used
-        self.sorcery_points_max=dataloaders.get_sorcery_points(self.level)
+        self.slots=constants.spellslots[self.level]
+        self.slots_used=slots_used if slots_used is not None else [0]*9
+        self.sorcery_points_max=self.level if self.level>1 else 0
         self.sorcery_points_used=sorcery_points_used
+
+    def prepare_spell(self,spell):
+        if spell in self.spells:
+            self.spells.remove(spell)
+            print(f'Forgot the spell {spell.name}.')
+        else:
+            self.spells.append(spell)
+            print(f'Learnt the spell {spell.name}.')
 
     def has_spell_slot(self,level):
         if level==0:

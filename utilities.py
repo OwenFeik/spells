@@ -31,3 +31,15 @@ def printable_paragraph(string,width):
         return out
     else:
         return string
+
+def level_prefix(level):
+    if level==0:
+        return 'Cantrip'
+    elif level==1:
+        return '1st Level'
+    elif level==2:
+        return '2nd Level'
+    elif level==3:
+        return '3rd Level'
+    else:
+        return f'{level}th Level'

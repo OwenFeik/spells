@@ -1,9 +1,9 @@
 import json
 import os # Check files in saves folder
+import constants
 
-def get_spellslots(clss,level):
-    with open(f'resources/{clss}.json','r') as f:
-        return json.load(f).get('spellslots').get(str(level))
+def get_spellslots(level):
+    return constants.spellslots[level]
         
 def get_spells():
     with open('resources/spells.json','r') as f:
@@ -18,6 +18,10 @@ def save_character(char):
         os.mkdir('saves')
     with open(f'saves/{char.name.lower()}.json','w') as f:
         json.dump(char.to_json(),f,indent=4)
+
+def delete_character(char):
+    if os.path.exists(f'saves/{char}.json'):
+        os.remove(f'saves/{char}.json')
 
 def current_chars():
     saves=os.listdir('saves')
