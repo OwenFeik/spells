@@ -46,23 +46,35 @@ def print_prepped(char):
     for klasse in [klasse for klasse in char.klasses if hasattr(klasse,'spells')]:
         out+=f'\n\n{klasse.klasse.capitalize()}:\n'
         spells={i:[] for i in range(0,10)}
-        for spell in klasse.spells:
-            spells[spell.level].append(spell.name)
-        for i in range(0,10):
-            if spells[i]:
-                out+=f'\n\t{level_prefix(i)}:'
-                for spell in spells[i]:
-                    opt.append(spell)
-                    out+=f'\n\t\t[{len(opt)}] {spell}'
-                
+        if klasse.spells:
+            for spell in sorted(klasse.spells,key=lambda k:k.name):
+                spells[spell.level].append(spell.name)
+            for i in range(0,10):
+                if spells[i]:
+                    out+=f'\n\t{level_prefix(i)}:'
+                    for spell in spells[i]:
+                        opt.append(spell)
+                        out+=f'\n\t\t[{len(opt)}] {spell}'
+        else:
+            out+='\tNo spells.'
+
     print(out[1:]+'\n')
     return ('spell',opt)
 
 def print_chars():
     chars=current_chars()
-    char_string=''
-    for i in range(len(chars)):
-        char_string+=f"\n[{i+1}] {chars[i].get('name')} | {chars[i].get('class').get('class')} {chars[i].get('class').get('level')}"
-    print(f'\nCharacters:\n{char_string}\n')
-    opt=[char.get('name').lower() for char in chars]
-    return ('char',opt)
+    if chars:
+        char_string=''
+        for i in range(len(chars)):
+            char_string+=f"\n[{i+1}] {chars[i].get('name')} | "
+            first=True
+            for klasse in chars[i].get('classes'):
+                if not first:
+                    char_string+=', '
+                char_string+=f"{klasse.get('class').capitalize()} {klasse.get('level')}"
+                first=False
+        print(f'\nCharacters:\n{char_string}\n')
+        opt=[char.get('name').lower() for char in chars]
+        return ('char',opt)
+    else:
+        print('No characters saved.')

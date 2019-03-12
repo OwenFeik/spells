@@ -2,7 +2,7 @@ from char import Char
 from spellbook import Spellbook
 from cli import print_spell,print_prepped,print_chars
 from dataloaders import load_character,save_character,delete_character
-from utilities import clean_string
+from utilities import clean_string,clear_screen
 
 c=None # Current player character
 
@@ -20,7 +20,7 @@ while True:
     
     try:
         inpt=[clean_string(string) for string in input('> ').split(' ') if string != '']
-        command=inpt.pop(0)
+        command=inpt.pop(0).lower()
         args=inpt
     except:
         command=''
@@ -47,7 +47,7 @@ while True:
             if c:
                 save_character(c)
             raise SystemExit
-        elif command=='char' or command=='ch':
+        elif command in ['char','ch']:
             if args:
                 try:
                     try:
@@ -61,24 +61,20 @@ while True:
                     except ValueError:
                         print(f'Ran into issue loading character {args[0]}.')
                 except FileNotFoundError:
-                    try:
-                        c=Char(**{'class':args[0]})
-                        print(f'Temp character of class {args[0]} created. Use "rename <name>" for a new name.')
-                    except ValueError:
-                        print(f'No class {args[0]} found.')
+                    print(f'No character {args[0]} found.')
             else:
                 if c:
                     print(f'Current character: {c.name}.')
                 else:
                     c=Char.from_wizard()
-        elif command=='info' or command=='i':
+        elif command in ['info','i']:
             arg=' '.join(args)
             spell=sb.get_spell(arg)
             if spell:
                 print_spell(spell)
             else:
                 print('Sorry, I couldn\'t find that spell.')
-        elif command=='prep' or command=='p':
+        elif command in ['prep','p']:
             if c:
                 spell=sb.get_spell(' '.join(args))
                 if spell:
@@ -86,13 +82,13 @@ while True:
                 else:
                     print('Sorry, I couldn\'t find that spell.')
             else:
-                print('To prepare spells, start a character with "c <class>".')
-        elif command=='prepped' or command=='prepared' or command=='pd':
+                print('To prepare spells, start a character with "char".')
+        elif command in ['prepped','prepared','pd']:
             if c:
                 opt=print_prepped(c)
             else:
-                print('To prepare spells, start a character with "c <class>".')
-        elif command=='cast' or command=='c':
+                print('To prepare spells, start a character with "char".')
+        elif command in ['cast','c']:
             if c:
                 spell=sb.get_spell(' '.join(args))
                 if spell:
@@ -100,17 +96,19 @@ while True:
                 else:
                     print(f'No spell {args[0]} found.')
             else:
-                print('To cast spells, start a character with "char <class>".')
+                print('To cast spells, start a character with "char".')
         elif command=='rename':
             c.name=args[0]
         elif command=='rest':
             if c:
                 c.long_rest()
             else:
-                print('To rest, start or load a character with "c <class>".')
+                print('To rest, start or load a character with "char".')
         elif command=='chars':
             opt=print_chars()
         elif command=='delchar':
             delete_character(args[0])
+        elif command in ['clear','cls']:
+            clear_screen()
     except Exception as e:
         print(f'Ran into a problem with that command: {e}')

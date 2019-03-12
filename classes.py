@@ -85,8 +85,8 @@ class Cleric(Klasse):
         return {
             'class':self.klasse,
             'level':self.level,
-            'prepared':[spell.name for spell in self.prepared],
-            'cantrips':[spell.name for spell in self.cantrips],
+            'prepared':sorted([spell.name for spell in self.prepared]),
+            'cantrips':sorted([spell.name for spell in self.cantrips]),
             'slots_used':self.slots_used
         }
 
@@ -168,7 +168,7 @@ class Sorcerer(Klasse):
         return {
             'class':self.klasse,
             'level':self.level,
-            'spells':[spell.name for spell in self.spells],
+            'spells':sorted([spell.name for spell in self.spells]),
             'slots_used':self.slots_used
         }
 

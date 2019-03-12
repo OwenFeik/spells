@@ -95,7 +95,7 @@ class Char():
             elif len(self.klasses)==1:
                 print(f'The class {self.klasses[0].klasse} can\'t cast spells')
             else:
-                klasses=[kls.klasse for kls in self.klasses if hasattr(kls,'cast_spell')]
+                klasses=[kls.klasse.capitalize() for kls in self.klasses if hasattr(kls,'cast_spell')]
                 out=f'Choose a class to cast {spell.name} with.\n'
                 for i,kls in enumerate(klasses):
                     out+=f'\n[{i+1}] {kls}'

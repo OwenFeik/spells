@@ -1,3 +1,5 @@
+import os # Clear screen
+
 def clean_string(string):
     while len(string)>0 and string[0]==' ':
         string=string[1:]
@@ -43,3 +45,9 @@ def level_prefix(level):
         return '3rd Level'
     else:
         return f'{level}th Level'
+
+def clear_screen():
+    if os.name=='nt':
+        os.system('cls')
+    else:
+        os.system('clear')
