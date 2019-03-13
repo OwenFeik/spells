@@ -78,3 +78,16 @@ def print_chars():
         return ('char',opt)
     else:
         print('No characters saved.')
+
+def print_spellslots(char):
+    spell_klasses=[klasse for klasse in char.klasses if hasattr(klasse,'slots') and hasattr(klasse,'slots_used')]
+    if spell_klasses:
+        out='\nSpell Slots:'
+        for klasse in spell_klasses:
+            out+=f'\n\n{klasse.klasse.capitalize()}:\n'
+            slots=[klasse.slots[i]-klasse.slots_used[i] for i in range(0,9)]
+            for i in range(0,9):
+                out+=f'\n\t{level_prefix(i+1)}: {slots[i]}'
+        print(out+'\n')
+    else:
+        print('This character has no spellcasting classes.')

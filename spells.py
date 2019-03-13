@@ -1,6 +1,6 @@
 from char import Char
 from spellbook import Spellbook
-from cli import print_spell,print_prepped,print_chars
+from cli import print_spell,print_prepped,print_chars,print_spellslots
 from dataloaders import load_character,save_character,delete_character
 from utilities import clean_string,clear_screen
 
@@ -97,6 +97,11 @@ while True:
                     print(f'No spell {args[0]} found.')
             else:
                 print('To cast spells, start a character with "char".')
+        elif command=='slots':
+            if c:
+                print_spellslots(c)
+            else:
+                print('No current character.')
         elif command=='rename':
             c.name=args[0]
         elif command=='rest':
