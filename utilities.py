@@ -1,4 +1,5 @@
 import os # Clear screen
+from random import randint # Roll dice
 
 def clean_string(string):
     while len(string)>0 and string[0]==' ':
@@ -51,3 +52,19 @@ def clear_screen():
         os.system('cls')
     else:
         os.system('clear')
+
+def parse_roll(string):
+    qty,die=(int(c) for c in string.split('d'))
+
+    rolls=[]
+    for _ in range(0,qty):
+        rolls.append(randint(1,die))
+
+    if qty==1:
+        out=f'Roll: {rolls[0]}'
+    else:
+        out='Rolls: '
+        for result in rolls:
+            out+=f'{str(result)}, '
+        out=f'{out[:-2]}\tTotal: {sum(rolls)}'
+    print(out)
