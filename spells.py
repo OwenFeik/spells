@@ -120,5 +120,15 @@ while True:
                 c.long_rest()
             else:
                 print('To rest, start or load a character with "char".')
+        elif command in ['sorcerer','sorc','sorcery']:
+            if c:
+                klasse=c.has_class('sorcerer')
+                if klasse:
+                    klasse.handle_special_action(args)
+                else:
+                    print('This character is not a sorcerer.')
+            else:
+                print('Create a Sorcerer with "char" to use this command.')
+
     except Exception as e:
         print(f'Ran into a problem with that command: {e}')

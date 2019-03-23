@@ -53,6 +53,13 @@ class Char():
                 self.current_hp=current_hp
             else:
                 raise ValueError
+
+    def has_class(self,klasse):
+        klasse=klasse.lower()
+        for kls in self.klasses:
+            if kls.klasse==klasse:
+                return kls
+        return False
     
     def long_rest(self):
         for klasse in self.klasses:

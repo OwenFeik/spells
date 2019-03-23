@@ -70,7 +70,7 @@ class Cleric(Klasse):
         if spell in self.prepared:
             if self.has_spell_slot(spell.level):
                 self.slots_used[spell.level-1]+=1
-                print(f'You cast {spell.name}.')
+                print(f'You cast {spell.name}. {self.slots[spell.level-1]-self.slots_used[spell.level-1]} level {spell.level} slots remaining.')
             else:
                 print(f'No level {spell.level} slots available.')
         elif spell.level==0:
@@ -154,11 +154,26 @@ class Sorcerer(Klasse):
         if self.has_spell_slot(level):
             if self.sorcery_points_used-level>=0:
                 self.sorcery_points_used-=level
-                self.slots_used[level-1]+=1
             else:
-                print(f'Currently have {self.sorcery_points_max-self.sorcery_points_used} sorcery points out of {self.sorcery_points_max}.')
+                self.sorcery_points_used=0
+            self.slots_used[level-1]+=1
+            print(f'Converted a level {level} slot. {self.sorcery_points_max-self.sorcery_points_used}/{self.sorcery_points_max} points available. {self.slots[level-1]-self.slots_used[level-1]} level {level} slots remaining.')
         else:
             print(f'No spell slot of level {level} available.')
+
+    def handle_special_action(self,args):
+        command=args[0]
+
+        if command=='spend':
+            arg=int(args[1])
+            self.spend_sorcery_points(arg)
+        elif command=='make':
+            arg=int(args[1])
+            self.convert_spell_slots(arg)
+        elif command=='points':
+            print(f'Currently have {self.sorcery_points_max-self.sorcery_points_used}/{self.sorcery_points_max} sorcery points.')
+        else:
+            print('That command is not available. Sorcerer commands: "spend", "make", "points".')
 
     def long_rest(self):
         self.slots_used=[0]*9
@@ -169,18 +184,19 @@ class Sorcerer(Klasse):
             'class':self.klasse,
             'level':self.level,
             'spells':sorted([spell.name for spell in self.spells]),
-            'slots_used':self.slots_used
+            'slots_used':self.slots_used,
+            'sorcery_points_used':self.sorcery_points_used
         }
 
     @staticmethod
     def from_json(data,sb=None):
         if sb:
-            level=data.get('level')
-            spells=[sb.get_spell(spell) for spell in data.get('spells')]
-            slots_used=data.get('slots_used')
+            spells=[sb.get_spell(spell) for spell in data.get('spells')]            
         else:
-            level=data.get('level')
             spells=[]
-            slots_used=data.get('slots_used')
+            
+        level=data.get('level')
+        slots_used=data.get('slots_used')
+        sorcery_points_used=data.get('sorcery_points_used')
 
-        return Sorcerer(level,spells,slots_used)
+        return Sorcerer(level,spells,slots_used,sorcery_points_used)
