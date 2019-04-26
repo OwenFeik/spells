@@ -81,6 +81,11 @@ class Cleric(Klasse):
     def long_rest(self):
         self.slots_used=[0]*9
 
+    def level_up(self):
+        self.level += 1
+        self.slots = constants.spellslots[self.level]
+        print(f'Gained 1 level in cleric! New cleric level: {self.level}.')
+
     def to_json(self):
         return {
             'class':self.klasse,
@@ -112,8 +117,11 @@ class Sorcerer(Klasse):
         self.spells=[] if spells is None else spells
         self.slots=constants.spellslots[self.level]
         self.slots_used=slots_used if slots_used is not None else [0]*9
-        self.sorcery_points_max=self.level if self.level>1 else 0
         self.sorcery_points_used=sorcery_points_used
+
+    @property
+    def sorcery_points_max(self):
+        return self.level if self.level > 1 else 0
 
     def prepare_spell(self,spell):
         if spell in self.spells:
@@ -178,6 +186,11 @@ class Sorcerer(Klasse):
     def long_rest(self):
         self.slots_used=[0]*9
         self.sorcery_points_used=0
+
+    def level_up(self):
+        self.level += 1
+        self.slots = constants.spellslots[self.level]
+        print(f'Gained 1 level in sorcerer! New sorcerer level: {self.level}.')
 
     def to_json(self):
         return {

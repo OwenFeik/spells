@@ -96,6 +96,9 @@ class Char():
             for kls in self.klasses:
                 if kls.klasse==klasse.lower():
                     kls.cast_spell(spell)
+                    break
+            else:
+                print(f'{self.name} doesn\'t have the class {klasse}.')
         else:
             if len(self.klasses)==1 and hasattr(self.klasses[0],'cast_spell'): 
                 self.klasses[0].cast_spell(spell)
@@ -103,13 +106,36 @@ class Char():
                 print(f'The class {self.klasses[0].klasse} can\'t cast spells')
             else:
                 klasses=[kls.klasse.capitalize() for kls in self.klasses if hasattr(kls,'cast_spell')]
-                out=f'Choose a class to cast {spell.name} with.\n'
+                out=f'\nChoose a class to cast {spell.name} with.\n'
                 for i,kls in enumerate(klasses):
                     out+=f'\n[{i+1}] {kls}'
                 print(out+'\n')
 
                 return ('class',klasses,'cast',spell.name)
                     
+    def level_up(self, klasse = None):
+        if not self.klasses:
+            print(f'{self.name} can\'t level up because they don\'t have a class!')
+        elif len(self.klasses) == 1:
+            self.klasses[0].level_up()
+        elif klasse:
+            kls = klasse.lower()
+            for k in self.klasses:
+                if kls == k.klasse:
+                    k.level_up()
+                    break
+            else:
+                print(f'{self.name} doesn\'t have any levels in the class {klasse}.')
+        else:
+            klasses = [kls.klasse.capitalize() for kls in self.klasses]
+            out = f'\nWhat class does {self.name} gain a level in?\n'
+            for i, k in enumerate(klasses):
+                out += f'\n[{i+1}] {k}'
+            out += '\n\nAlternatively, specify a new class with the command "levelup <class>".\n'
+            print(out)
+
+            return ('class', klasses, 'level_up')
+
     def to_json(self):
         data={}
         if hasattr(self,'name'):

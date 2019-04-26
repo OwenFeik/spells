@@ -29,22 +29,24 @@ while True:
 
     try:
         if command.isnumeric():
-            if opt and int(command)<len(opt[1])+1:
-                if opt[0]=='spell':
-                    args=[opt[1][int(command)-1]]
-                    command='info'
-                elif opt[0]=='char':
-                    args=[opt[1][int(command)-1]]
-                    command='char'
-                elif opt[0]=='class':
-                    if opt[2]=='cast':
-                        c.cast_spell(sb.get_spell(opt[3]),opt[1][int(command)-1])
-                    elif opt[2]=='prep':
-                        c.prepare_spell(sb.get_spell(opt[3]),opt[1][int(command)-1])
+            index = int(command) - 1
+            if opt and index < len(opt[1]):
+                if opt[0] == 'spell':
+                    args = [opt[1][index]]
+                    command = 'info'
+                elif opt[0] == 'char':
+                    args = [opt[1][index]]
+                    command = 'char'
+                elif opt[0] == 'class':
+                    if opt[2] == 'cast':
+                        c.cast_spell(sb.get_spell(opt[3]), opt[1][index])
+                    elif opt[2] == 'prep':
+                        c.prepare_spell(sb.get_spell(opt[3]), opt[1][index])
+                    elif opt[2] == 'level_up':
+                        c.level_up(opt[1][index])
             else:
                 print('That option isn\'t available right now.')
-
-        if command=='exit':
+        elif command=='exit':
             if c:
                 save_character(c)
             raise SystemExit
@@ -103,7 +105,7 @@ while True:
             if c:
                 spell=sb.get_spell(' '.join(args))
                 if spell:
-                        opt=c.cast_spell(spell)
+                    opt=c.cast_spell(spell)
                 else:
                     print(f'No spell {args[0]} found.')
             else:
@@ -120,6 +122,13 @@ while True:
                 c.long_rest()
             else:
                 print('To rest, start or load a character with "char".')
+        elif command=='levelup' or (command=='level' and args[0]=='up'):
+            if args and args[0] == 'up':
+                del args[0]
+            if args:
+                c.level_up(args[0])
+            else:
+                opt = c.level_up()
         elif command in ['sorcerer','sorc','sorcery']:
             if c:
                 klasse=c.has_class('sorcerer')
