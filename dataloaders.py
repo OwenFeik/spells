@@ -22,6 +22,9 @@ def save_character(char):
 def delete_character(char):
     if os.path.exists(f'saves/{char}.json'):
         os.remove(f'saves/{char}.json')
+        print(f'Deleted character {char}.')
+    else:
+        print(f'No character "{char}" found.')
 
 def current_chars():
     saves=os.listdir('saves')

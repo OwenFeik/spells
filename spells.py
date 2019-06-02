@@ -1,15 +1,15 @@
 import re # Check command patterns
 from char import Char
 from spellbook import Spellbook
-from cli import print_spell,print_prepped,print_chars,print_spellslots
-from dataloaders import load_character,save_character,delete_character
-from utilities import clean_string,clear_screen,parse_roll
+from cli import print_spell, print_prepped, print_chars, print_spellslots
+from dataloaders import load_character, save_character, delete_character
+from utilities import clean_string, clear_screen, parse_roll
 
 c=None # Current player character
 
 try:
     try:
-        sb=Spellbook() # Utility for retrieving spell information
+        sb = Spellbook() # Utility for retrieving spell information
     except ValueError:
         print('Spellbook file corrupted. No Spellbook available.')
 except FileNotFoundError:
@@ -20,15 +20,15 @@ opt=[] # Options which persist after certain functions
 while True:
     
     try:
-        inpt=[clean_string(string) for string in input('> ').split(' ') if string != '']
-        command=inpt.pop(0).lower()
-        args=inpt
+        inpt = [clean_string(string) for string in input('> ').split(' ') if string != '']
+        command = inpt.pop(0).lower()
+        args = inpt
     except:
-        command=''
-        args=[]
+        command = ''
+        args = []
 
     try:
-        if command.isnumeric():
+        if command.isnumeric(): # Handle options
             index = int(command) - 1
             if opt and index < len(opt[1]):
                 if opt[0] == 'spell':
@@ -46,7 +46,8 @@ while True:
                         c.level_up(opt[1][index])
             else:
                 print('That option isn\'t available right now.')
-        elif command=='exit':
+        
+        if command=='exit':
             if c:
                 save_character(c)
             raise SystemExit
@@ -77,7 +78,7 @@ while True:
                             c=Char.from_json(data)
                         else:
                             c=Char.from_json(load_character(args[0].lower()))
-                        print(f'Character loaded: {args[0]}.')
+                        print(f'Character loaded: {c.name}.')
                     except ValueError:
                         print(f'Ran into issue loading character {args[0]}.')
                 except FileNotFoundError:
