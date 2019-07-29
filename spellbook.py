@@ -1,5 +1,6 @@
 import dataloaders
 import difflib
+import utilities
 
 class Spellbook():
     def __init__(self):
@@ -12,6 +13,19 @@ class Spellbook():
             self._names=[name.lower() for name in self.names] # Used to match queries through difflib
         except:
             raise ValueError
+
+    def handle_query(self, query):
+        queries = utilities.parse_spell_query(query)
+
+        results = []
+        for spell in self.spells:
+            for q in queries:
+                if not queries[q] in str(getattr(spell, q)).lower():
+                    break
+            else:
+                results.append(spell)
+        
+        return results
 
     def get_spell(self,query):
         target=difflib.get_close_matches(query.lower(),self._names,1)

@@ -1,7 +1,7 @@
 import re # Check command patterns
 from char import Char
 from spellbook import Spellbook
-from cli import print_spell, print_prepped, print_chars, print_spellslots
+from cli import print_spell, print_prepped, print_chars, print_spellslots, print_list
 from dataloaders import load_character, save_character, delete_character
 from utilities import clean_string, clear_screen, parse_roll
 
@@ -58,6 +58,17 @@ while True:
                 print_spell(spell)
             else:
                 print('Sorry, I couldn\'t find that spell.')
+        elif command in ['search', 's']:
+            spells = sb.handle_query(' '.join(args))
+            if spells:
+                if len(spells) == 1:
+                    print_spell(spells[0])
+                else:
+                    spell_names = [spell.name for spell in spells]
+                    print_list('Results', spell_names)
+                    opt = ['spell', spell_names]
+            else:
+                print('Couldn\'t find any spells matching that description.')
         elif command=='roll':
             parse_roll(args[0])
         elif re.match('[0-9]+d[0-9]+$',command):
@@ -139,6 +150,8 @@ while True:
                     print('This character is not a sorcerer.')
             else:
                 print('Create a Sorcerer with "char" to use this command.')
+        else:
+            print('Unknown command: ' + command)
 
     except Exception as e:
         print(f'Ran into a problem with that command: {e}')

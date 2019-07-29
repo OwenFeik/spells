@@ -91,3 +91,12 @@ def print_spellslots(char):
         print(out+'\n')
     else:
         print('This character has no spellcasting classes.')
+
+def print_list(title, items):
+    print(f'\n{title}:\n')
+    
+    count = 0
+    for item in items:
+        count += 1
+        print(f'\t[{count}] {item}')
+    print('\n')

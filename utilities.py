@@ -68,3 +68,56 @@ def parse_roll(string):
             out+=f'{str(result)}, '
         out=f'{out[:-2]}\tTotal: {sum(rolls)}'
     print(out)
+
+
+# Parse a string like "school:evocation time:action"
+def parse_spell_query(string):
+    string += ' '
+
+    queries = {}
+
+    query_shortenings = {
+        'n': 'name',
+        's': 'school',
+        'l': 'level',
+        'c': 'cast',
+        'r': 'rnge',
+        'co': 'components',
+        'd': 'duration',
+        't': 'desc'
+    }
+
+    quote = False
+    colon = False
+    query = ''
+    criteria = ''
+    for c in string:
+        if c == ' ':
+            if not quote:
+                colon = False
+
+                if query and criteria:
+                    if query in query_shortenings:
+                        query = query_shortenings[query]
+                    queries[query.lower()] = criteria.lower()
+                
+                query = ''
+                criteria = ''
+            elif colon and quote:
+                criteria += c
+            else:
+                raise ValueError
+        elif c == '"':
+            if colon:
+                quote = not quote
+            else:
+                raise ValueError
+        elif c == ':' and not quote:
+            colon = True
+        else:
+            if colon:
+                criteria += c
+            else:
+                query += c
+
+    return queries
