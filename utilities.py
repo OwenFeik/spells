@@ -84,7 +84,8 @@ def parse_spell_query(string):
         'r': 'rnge',
         'co': 'components',
         'd': 'duration',
-        't': 'desc'
+        't': 'desc',
+        'range': 'rnge'
     }
 
     quote = False
@@ -121,3 +122,6 @@ def parse_spell_query(string):
                 query += c
 
     return queries
+
+def parse_tracker_command(command):
+    pass

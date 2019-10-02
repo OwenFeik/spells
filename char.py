@@ -1,140 +1,58 @@
-from classes import Klasse
-from stats import Stats
-from utilities import clean_string
+import constants
+import cli
 
 class Char():
-    def __init__(self,**kwargs):
-        
-        name=kwargs.get('name')
-        if name:
-            self.name=name
-        else:
-            self.name='unnamed'
-
-        klasses=kwargs.get('classes')
-        self.klasses=[]
-        for klasse in klasses:
-            if isinstance(klasse,Klasse):
-                klasse.owner=self
-                self.klasses.append(klasse)
-            elif type(klasse)==dict:
-                if kwargs.get('sb'):
-                    klasse=Klasse.from_json(klasse,kwargs.get('sb'))
-                else:
-                    klasse=Klasse.from_json(klasse)
-                klasse.owner=self
-                self.klasses.append(klasse)
-            elif type(klasse)==str:
-                klasse=Klasse.from_str(klasse)
-                if klasse:
-                    klasse.owner=self
-                    self.klasses.append(klasse)
-                else:
-                    raise ValueError
-
-        stats=kwargs.get('stats')
-        if type(stats)==Stats:
-            self.stats=stats
-        elif type(stats)==dict:
-            self.stats=Stats.from_json(stats)
-        else:
-            self.stats=Stats(10,10,10,10,10,10)
-    
-        max_hp=kwargs.get('max_hp')
-        if max_hp:
-            if type(max_hp)==int:
-                self.max_hp=max_hp
-            else:
-                raise ValueError
-    
-        current_hp=kwargs.get('current_hp')
-        if current_hp:
-            if type(current_hp)==int:
-                self.current_hp=current_hp
-            else:
-                raise ValueError
-
-    def has_class(self,klasse):
-        klasse=klasse.lower()
-        for kls in self.klasses:
-            if kls.klasse==klasse:
-                return kls
-        return False
+    def __init__(self, **kwargs):
+        self.name = kwargs.get('name', '<no name>')
+        self.klasses = kwargs.get('classes', [])
+        self.caster_level = sum([int(k.get('caster') * k.get('level')) for k in self.klasses])
+        self.spell_slots = constants.spellslots[self.caster_level]
+        self.spell_slots_used = kwargs.get('spell_slots_used', [0] * 9)
+        self.prepared = kwargs.get('prepared', [])
     
     def long_rest(self):
         for klasse in self.klasses:
             klasse.long_rest()
-        if hasattr(self,'current_hp') and hasattr(self,'max_hp'):
-            self.current_hp=self.max_hp
 
-    def prepare_spell(self,spell,klasse=None):
-        if not self.klasses:
-            print(f'The character {self.name} can\'t prepare spells because it doesn\'t have a class!')
-        elif klasse:
-            for kls in self.klasses:
-                if kls.klasse==klasse.lower():
-                    kls.prepare_spell(spell)
-                    break
+    def has_spell_slot(self,level):
+        if level == 0:
+            return True
+        if self.spell_slots_used[level - 1] < self.spell_slots[level - 1]:
+            return True
         else:
-            if len(self.klasses)==1 and hasattr(self.klasses[0],'prepare_spell'):
-                self.klasses[0].prepare_spell(spell)
-            elif len(self.klasses)==1:
-                print(f'The class {self.klasses[0].klasse} can\'t cast spells')
-            else:
-                klasses=[kls.klasse for kls in self.klasses if hasattr(kls,'prepare_spell')]
-                out=f'\nChoose a class to prepare {spell.name} with.\n'
-                for i,kls in enumerate(klasses):
-                    out+=f'\n[{i+1}] {kls}'
-                print(out+'\n')
+            return False
 
-                return ('class',klasses,'prep',spell.name)
+    def prepare_spell(self, spell):
+        if spell in self.spells:
+            self.spells.remove(spell)
+            print(f'Forgot the spell {spell.name}.')
+        else:
+            self.spells.append(spell)
+            print(f'Learnt the spell {spell.name}.')
             
-    def cast_spell(self,spell,klasse=None):
-        if not self.klasses:
-            print(f'The character {self.name} can\'t cast spells because it doesn\'t have a class!')
-        elif klasse:
-            for kls in self.klasses:
-                if kls.klasse==klasse.lower():
-                    kls.cast_spell(spell)
-                    break
-            else:
-                print(f'{self.name} doesn\'t have the class {klasse}.')
+    def cast_spell(self,spell):
+        if spell in self.prepared or cli.get_decision(f'{spell.name} isn\'t prepared. Cast anyway?'):
+            if self.has_spell_slot(spell.level) or cli.get_decision(f'No level {spell.level} slots available. Cast anyway?'):
+                self.slots_used[spell.level - 1] += 1
+                print(f'You cast {spell.name}. {self.spell_slots[spell.level - 1] - self.spell_slots_used[spell.level - 1]} level {spell.level} slots remaining.') 
+        elif spell.level==0:
+            pass
         else:
-            if len(self.klasses)==1 and hasattr(self.klasses[0],'cast_spell'): 
-                self.klasses[0].cast_spell(spell)
-            elif len(self.klasses)==1:
-                print(f'The class {self.klasses[0].klasse} can\'t cast spells')
-            else:
-                klasses=[kls.klasse.capitalize() for kls in self.klasses if hasattr(kls,'cast_spell')]
-                out=f'\nChoose a class to cast {spell.name} with.\n'
-                for i,kls in enumerate(klasses):
-                    out+=f'\n[{i+1}] {kls}'
-                print(out+'\n')
-
-                return ('class',klasses,'cast',spell.name)
+            print(f'{spell.name} not prepared.')
                     
     def level_up(self, klasse = None):
-        if not self.klasses:
-            print(f'{self.name} can\'t level up because they don\'t have a class!')
-        elif len(self.klasses) == 1:
-            self.klasses[0].level_up()
-        elif klasse:
-            kls = klasse.lower()
-            for k in self.klasses:
-                if kls == k.klasse:
-                    k.level_up()
-                    break
-            else:
-                print(f'{self.name} doesn\'t have any levels in the class {klasse}.')
+        if cli.get_decision('Add level to already present class?'):
+            klasse = cli.get_choice('In which class was a level gained?', [k['name'] for k in self.klasses])
+            [k for k in self.klasses if k.name == klasse][0]['level'] += 1
         else:
-            klasses = [kls.klasse.capitalize() for kls in self.klasses]
-            out = f'\nWhat class does {self.name} gain a level in?\n'
-            for i, k in enumerate(klasses):
-                out += f'\n[{i+1}] {k}'
-            out += '\n\nAlternatively, specify a new class with the command "levelup <class>".\n'
-            print(out)
-
-            return ('class', klasses, 'level_up')
+            klasse = input('In which class was a level gained? > ')
+            if klasse in constants.caster_types:
+                self.klasses.append({
+                    'name': klasse,
+                    'level': 1,
+                    'caster': constants.caster_types[klasse]
+                })
+            
 
     def to_json(self):
         data={}
@@ -157,33 +75,37 @@ class Char():
 
     @staticmethod
     def from_wizard():
-        prompt='What is you characters name? '
-        current='name'
-        data={}
-        while True:
-            # try:
-            inpt=[clean_string(string) for string in input(f'{prompt}> ').split(' ') if string != '']
-            
-            if current=='name':
-                data['name']=inpt[0]
-                prompt='Enter your characters classes and levels: <class> <level> <class> <level> '
-                current='class'
-            elif current=='class':
-                data['classes']=[]
-                if len(inpt)%2==0 and not len(inpt)==0:
-                    for i in range(0,int(len(inpt)/2)):
-                        if inpt[2*i].lower() in Klasse.klasse_list():
-                            if inpt[(2*i)+1].isnumeric():
-                                data['classes'].append(Klasse.from_json({'class':inpt[2*i].lower(),'level':int(inpt[(2*i)+1])}))
-                            else:
-                                prompt='Enter the characters classes and levels: e.g. Cleric 1 wizard 2 '
-                        else:
-                            print(f'Class {inpt[2*i]} not available.')
-                    break
+        data = {
+            'name': input('What is you character\'s name? > '),
+            'classes': []
+        }
+
+        classes_done = False
+        prompt = 'Enter your character\'s classes and levels: <class> <level> <class> <level> '
+        while not classes_done:
+            inpt = cli.get_input(prompt)
+            if len(inpt) % 2 == 0 and len(inpt) != 0:
+                for i in range(0, len(inpt), 2):
+                    if inpt[i] not in constants.caster_types:
+                        caster_type = input(f'Class {inpt[i]} not found. Is this class a full, half or non caster? > ')
+                        if input(f'Confirm class {inpt[i]} ({caster_type} caster) (y/n) > ').strip() != 'y':
+                            prompt = 'Enter your character\'s classes and levels: <class> <level> <class> <level> '
+                            break
+                    else:
+                        caster_type = inpt[i]
+
+                    if inpt[i + 1].isnumeric():
+                        data['classes'].append({
+                                'name': inpt[i], 
+                                'level': int(inpt[i + 1]),
+                                'caster': constants.caster_types[caster_type]
+                            })
+                    else:
+                        prompt = 'Enter the characters classes and levels: e.g. "Cleric 1 wizard 2" > '
                 else:
-                    prompt='Enter the characters classes and levels: e.g. Cleric 1 wizard 2'
+                    classes_done = True
 
-        # except:
-            # print('Inadmissable input.')
+            else:
+                prompt = 'Enter the characters classes and levels: e.g. "Cleric 1 wizard 2" > '
 
-        return Char.from_json(data)
+        print(data)

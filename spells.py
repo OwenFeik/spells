@@ -141,15 +141,6 @@ while True:
                 c.level_up(args[0])
             else:
                 opt = c.level_up()
-        elif command in ['sorcerer','sorc','sorcery']:
-            if c:
-                klasse=c.has_class('sorcerer')
-                if klasse:
-                    klasse.handle_special_action(args)
-                else:
-                    print('This character is not a sorcerer.')
-            else:
-                print('Create a Sorcerer with "char" to use this command.')
         else:
             print('Unknown command: ' + command)
 
