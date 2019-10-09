@@ -1,7 +1,7 @@
 from os import get_terminal_size
 
 from dataloaders import current_chars
-from utilities import clean_string,printable_paragraph,level_prefix
+from utilities import printable_paragraph, level_prefix
 
 def print_spell(spell):
     width=get_terminal_size()[0]
@@ -100,3 +100,22 @@ def print_list(title, items):
         count += 1
         print(f'\t[{count}] {item}')
     print('\n')
+
+def get_input(prompt):
+    return [string for string in input(f'{prompt}> ').strip().split(' ') if string != ''] 
+
+def get_decision(prompt):
+    return input(f'{prompt} (y/n) > ').strip().lower() in ['y', '']
+
+def get_choice(prompt, items):
+    print_list(prompt, items)
+
+    choice = input('> ')
+    while not choice.isnumeric() and not choice in items:
+        choice = input('Please enter the number of an item from the options > ')
+    
+    if choice.isnumeric():
+        return items[int(choice) - 1]
+    elif choice in items:
+        return choice
+        

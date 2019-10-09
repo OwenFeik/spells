@@ -1,11 +1,13 @@
 import re # Check command patterns
 from char import Char
-from spellbook import Spellbook
-from cli import print_spell, print_prepped, print_chars, print_spellslots, print_list
+from tracker import Tracker
+from spellbook import Spellbook, Spell
+from cli import print_spell, print_prepped, print_chars, print_spellslots, print_list, get_decision
 from dataloaders import load_character, save_character, delete_character
-from utilities import clean_string, clear_screen, parse_roll
+from utilities import clean_string, clear_screen, parse_roll, level_prefix
+from constants import commands
 
-c=None # Current player character
+c = None # Current player character
 
 try:
     try:
@@ -51,9 +53,9 @@ while True:
             if c:
                 save_character(c)
             raise SystemExit
-        elif command in ['info','i']:
-            arg=' '.join(args)
-            spell=sb.get_spell(arg)
+        elif command in ['info', 'i']:
+            arg = ' '.join(args)
+            spell = sb.get_spell(arg)
             if spell:
                 print_spell(spell)
             else:
@@ -69,26 +71,41 @@ while True:
                     opt = ['spell', spell_names]
             else:
                 print('Couldn\'t find any spells matching that description.')
-        elif command=='roll':
+        elif command == 'roll':
             parse_roll(args[0])
-        elif re.match('[0-9]+d[0-9]+$',command):
+        elif re.match('[0-9]+d[0-9]+$', command):
             parse_roll(command)
-        elif command=='chars':
-            opt=print_chars()
-        elif command=='delchar':
+        elif command == 'chars':
+            opt = print_chars()
+        elif command == 'delchar':
             delete_character(args[0])
         elif command in ['clear','cls']:
             clear_screen()
+        elif command in ['tracker', 't']:
+            if not c:
+                if get_decision('No current character, which is required to use trackers. Create a temporary character?'):
+                    c = Char()
+                else:
+                    continue
+
+            if args and args[0] in commands:
+                print(f'Name {args[0]} is reserved.')
+            elif len(args) == 1:
+                c.trackers[args[0]] = Tracker(args[0])
+            elif len(args) == 3 and args[1] == '=' and args[2].isnumeric():
+                c.trackers[args[0]] = Tracker(args[0], default = int(args[2]))
+            else:
+                print('Usage: "tracker <name>" or "tracker <name> = <number>".')
         elif command in ['char','ch']:
             if args:
                 try:
                     try:
                         if sb:
-                            data=load_character(args[0].lower())
+                            data = load_character(args[0].lower())
                             data.update({'sb':sb})
-                            c=Char.from_json(data)
+                            c = Char.from_json(data)
                         else:
-                            c=Char.from_json(load_character(args[0].lower()))
+                            c = Char.from_json(load_character(args[0].lower()))
                         print(f'Character loaded: {c.name}.')
                     except ValueError:
                         print(f'Ran into issue loading character {args[0]}.')
@@ -98,7 +115,7 @@ while True:
                 if c:
                     print(f'Current character: {c.name}.')
                 else:
-                    c=Char.from_wizard()
+                    c = Char.from_wizard()
         elif command in ['prep','p']:
             if c:
                 spell=sb.get_spell(' '.join(args))
@@ -115,7 +132,16 @@ while True:
                 print('To prepare spells, start a character with "char".')
         elif command in ['cast','c']:
             if c:
-                spell=sb.get_spell(' '.join(args))
+                spell = ' '.join(args)
+                if spell.isnumeric():
+                    spell = Spell.from_json({
+                        'name':f'a {level_prefix(int(spell))} Spell', 
+                        'level': int(spell),
+                        'school': 'placeholder'
+                    })
+                else:
+                    spell=sb.get_spell(spell)
+                
                 if spell:
                     opt=c.cast_spell(spell)
                 else:
@@ -141,15 +167,11 @@ while True:
                 c.level_up(args[0])
             else:
                 opt = c.level_up()
-        elif command in ['sorcerer','sorc','sorcery']:
-            if c:
-                klasse=c.has_class('sorcerer')
-                if klasse:
-                    klasse.handle_special_action(args)
-                else:
-                    print('This character is not a sorcerer.')
+        elif c and command in c.trackers:
+            if args:
+                print(c.trackers[command].handle_command(args)) # Returns a string describing the operation undertaken
             else:
-                print('Create a Sorcerer with "char" to use this command.')
+                print(c.trackers[command])
         else:
             print('Unknown command: ' + command)
 
