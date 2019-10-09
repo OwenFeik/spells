@@ -122,6 +122,3 @@ def parse_spell_query(string):
                 query += c
 
     return queries
-
-def parse_tracker_command(command):
-    pass

@@ -8,7 +8,7 @@ Spells is a command line utility for the management of DnD characters, under dev
 
 ### Resources:
 
-The resources folder ("./resources") should contain "spells.json": a file containing a list of spells of the following format.
+The resources folder ("./resources/") should contain "spells.json": a JSON file containing a list of spells of the following format.
 
 ```json 
     {

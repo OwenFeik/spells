@@ -39,3 +39,32 @@ caster_types = {
     'half': 0.5,
     'full': 1
 }
+
+commands = [
+    'exit',
+    'info',
+    'i',
+    'search',
+    's',
+    'roll',
+    'chars',
+    'delchar',
+    'clear',
+    'cls',
+    'tracker',
+    't',
+    'char',
+    'ch',
+    'prep',
+    'p',
+    'prepped',
+    'prepared',
+    'pd',
+    'cast',
+    'c',
+    'slots',
+    'rename',
+    'rest',
+    'levelup',
+    'level'
+]

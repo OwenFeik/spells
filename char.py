@@ -1,15 +1,23 @@
 import constants
 import cli
+import tracker
 
 class Char():
     def __init__(self, **kwargs):
         self.name = kwargs.get('name', '<no name>')
         self.klasses = kwargs.get('classes', [])
-        self.caster_level = sum([int(k.get('caster') * k.get('level')) for k in self.klasses])
-        self.spell_slots = constants.spellslots[self.caster_level]
         self.spell_slots_used = kwargs.get('spell_slots_used', [0] * 9)
         self.prepared = kwargs.get('prepared', [])
+        self.trackers = kwargs.get('trackers', {})
     
+    @property
+    def caster_level(self):
+        return sum([int(k.get('caster') * k.get('level')) for k in self.klasses])
+
+    @property
+    def spell_slots(self):
+        return constants.spellslots[self.caster_level]
+
     def long_rest(self):
         for klasse in self.klasses:
             klasse.long_rest()
@@ -30,8 +38,8 @@ class Char():
             self.spells.append(spell)
             print(f'Learnt the spell {spell.name}.')
             
-    def cast_spell(self,spell):
-        if spell in self.prepared or cli.get_decision(f'{spell.name} isn\'t prepared. Cast anyway?'):
+    def cast_spell(self, spell):
+        if spell in self.prepared or spell.school == 'placeholder' or cli.get_decision(f'{spell.name} isn\'t prepared. Cast anyway?'):
             if self.has_spell_slot(spell.level) or cli.get_decision(f'No level {spell.level} slots available. Cast anyway?'):
                 self.slots_used[spell.level - 1] += 1
                 print(f'You cast {spell.name}. {self.spell_slots[spell.level - 1] - self.spell_slots_used[spell.level - 1]} level {spell.level} slots remaining.') 
@@ -47,30 +55,38 @@ class Char():
         else:
             klasse = input('In which class was a level gained? > ')
             if klasse in constants.caster_types:
-                self.klasses.append({
-                    'name': klasse,
-                    'level': 1,
-                    'caster': constants.caster_types[klasse]
-                })
+                caster_type = klasse
+            else:
+                have_type = False
+                while not have_type:
+                    caster_type = input('Is this class a half (h), full (f) or non (n) caster? > ')
+                    if caster_type.lower() in ['half', 'full', 'non']:
+                        have_type = True
+                    elif caster_type in ['h', 'f', 'n']:
+                        caster_type = {'h': 'half', 'f': 'full', 'n':'non'}[caster_type]
+                        have_type = True
+                    elif not cli.get_decision('Inadmissable input. Retry?'):
+                        return
             
+            self.klasses.append({
+                'name': klasse,
+                'level': 1,
+                'caster': constants.caster_types[klasse]
+            })
 
     def to_json(self):
-        data={}
-        if hasattr(self,'name'):
-            data['name']=self.name
-        if hasattr(self,'klasses'):
-            data['classes']=[klasse.to_json() for klasse in self.klasses]
-        if hasattr(self,'stats'):
-            data['stats']=self.stats.to_json()
-        if hasattr(self,'max_hp'):
-            data['max_hp']=self.max_hp
-        if hasattr(self,'current_hp'):
-            data['current_hp']=self.current_hp
-
-        return data
+        return {
+            'name': self.name,
+            'classes': self.klasses,
+            'spell_slots_used': self.spell_slots_used,
+            'prepared': self.prepared,
+            'trackers': [t.to_json() for t in list(self.trackers.values())]
+        }
     
     @staticmethod
     def from_json(data):
+        if 'trackers' in data:
+            data['trackers'] = {t['name']: tracker.Tracker(t['name'], t['default'], t['quantity']) for t in data['trackers']}
         return Char(**data)
 
     @staticmethod
@@ -108,4 +124,4 @@ class Char():
             else:
                 prompt = 'Enter the characters classes and levels: e.g. "Cleric 1 wizard 2" > '
 
-        print(data)
+        return Char(**data)
