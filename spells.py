@@ -2,7 +2,7 @@ import re # Check command patterns
 from char import Char
 from tracker import Tracker
 from spellbook import Spellbook, Spell
-from cli import print_spell, print_prepped, print_chars, print_spellslots, print_list, get_decision
+from cli import print_spell, print_prepped, print_chars, print_list, get_decision
 from dataloaders import load_character, save_character, delete_character
 from utilities import clean_string, clear_screen, parse_roll, level_prefix
 from constants import commands
@@ -150,7 +150,7 @@ while True:
                 print('To cast spells, start a character with "char".')
         elif command=='slots':
             if c:
-                print_spellslots(c)
+                c.print_spell_slots()
             else:
                 print('No current character.')
         elif command=='rename':

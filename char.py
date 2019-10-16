@@ -1,6 +1,7 @@
 import constants
 import cli
 import tracker
+import utilities
 
 class Char():
     def __init__(self, **kwargs):
@@ -17,6 +18,13 @@ class Char():
     @property
     def spell_slots(self):
         return constants.spellslots[self.caster_level]
+
+    def print_spell_slots(self):
+        slots = self.spell_slots
+        out = '\nSpell Slots:'
+        for i in range(0, 9):
+            out += f'\n\t{utilities.level_prefix(i + 1)}: {slots[i]}'
+        print(out + '\n')        
 
     def long_rest(self):
         for klasse in self.klasses:
