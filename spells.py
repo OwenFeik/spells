@@ -97,7 +97,10 @@ while True:
             elif len(args) == 3 and args[1] == '=' and args[2].isnumeric():
                 c.trackers[args[0]] = Tracker(args[0], default = int(args[2]))
             else:
-                print('Usage: "tracker <name>" or "tracker <name> = <number>".')
+                if c.trackers:
+                    c.print_trackers()
+                else:
+                    print('Usage: "tracker <name>" or "tracker <name> = <number>".')
         elif command in ['char','ch']:
             if args:
                 try:
