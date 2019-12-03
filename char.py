@@ -28,7 +28,13 @@ class Char():
         out = '\nSpell Slots:'
         for i in range(0, 9):
             out += f'\n\t{utilities.level_prefix(i + 1)}: {self.spell_slots[i] - self.spell_slots_used[i]}'
-        print(out + '\n')        
+        print(out + '\n')
+
+    def print_trackers(self):
+        print('\nTrackers:\n')
+        for t in self.trackers:
+            print(f'\t{str(self.trackers[t])}')
+        print()
 
     def long_rest(self):
         self.spell_slots_used = [0] * 9
