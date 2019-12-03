@@ -43,22 +43,20 @@ def print_spell(spell):
 def print_prepped(char):
     out=''
     opt=[]
-    for klasse in [klasse for klasse in char.klasses if hasattr(klasse,'spells')]:
-        out+=f'\n\n{klasse.klasse.capitalize()}:\n'
-        spells={i:[] for i in range(0,10)}
-        if klasse.spells:
-            for spell in sorted(klasse.spells,key=lambda k:k.name):
-                spells[spell.level].append(spell.name)
-            for i in range(0,10):
-                if spells[i]:
-                    out+=f'\n\t{level_prefix(i)}:'
-                    for spell in spells[i]:
-                        opt.append(spell)
-                        out+=f'\n\t\t[{len(opt)}] {spell}'
-        else:
-            out+='\tNo spells.'
 
-    print(out[1:]+'\n')
+    spells={i:[] for i in range(0,10)}
+        
+    for spell in sorted(char.prepared, key = lambda k:k.name):
+        spells[spell.level].append(spell.name)
+
+    for i in range(0,10):
+        if spells[i]:
+            out+=f'\n\n{level_prefix(i)}:'
+            for spell in spells[i]:
+                opt.append(spell)
+                out+=f'\n\t[{len(opt)}] {spell}'
+
+    print(out+'\n')
     return ('spell',opt)
 
 def print_chars():
