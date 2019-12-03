@@ -8,7 +8,12 @@ class Char():
         self.name = kwargs.get('name', '<no name>')
         self.klasses = kwargs.get('classes', [])
         self.spell_slots_used = kwargs.get('spell_slots_used', [0] * 9)
-        self.prepared = kwargs.get('prepared', [])
+        if 'sb' in kwargs and 'prepared' in kwargs:
+            self.prepared = [kwargs['sb'].get_spell(s) for s in kwargs.get('prepared', [])]
+        elif kwargs.get('prepared', []):
+            print('Warning: no spellbook available, spellcasting functionality unavailable.')
+        else:
+            self.prepared = []
         self.trackers = kwargs.get('trackers', {})
     
     @property
@@ -20,15 +25,13 @@ class Char():
         return constants.spellslots[self.caster_level]
 
     def print_spell_slots(self):
-        slots = self.spell_slots
         out = '\nSpell Slots:'
         for i in range(0, 9):
-            out += f'\n\t{utilities.level_prefix(i + 1)}: {slots[i]}'
+            out += f'\n\t{utilities.level_prefix(i + 1)}: {self.spell_slots[i] - self.spell_slots_used[i]}'
         print(out + '\n')        
 
     def long_rest(self):
-        for klasse in self.klasses:
-            klasse.long_rest()
+        self.spell_slots_used = [0] * 9
 
     def has_spell_slot(self,level):
         if level == 0:
@@ -39,17 +42,17 @@ class Char():
             return False
 
     def prepare_spell(self, spell):
-        if spell in self.spells:
-            self.spells.remove(spell)
+        if spell in self.prepared:
+            self.prepared.remove(spell)
             print(f'Forgot the spell {spell.name}.')
         else:
-            self.spells.append(spell)
+            self.prepared.append(spell)
             print(f'Learnt the spell {spell.name}.')
             
     def cast_spell(self, spell):
         if spell in self.prepared or spell.school == 'placeholder' or cli.get_decision(f'{spell.name} isn\'t prepared. Cast anyway?'):
             if self.has_spell_slot(spell.level) or cli.get_decision(f'No level {spell.level} slots available. Cast anyway?'):
-                self.slots_used[spell.level - 1] += 1
+                self.spell_slots_used[spell.level - 1] += 1
                 print(f'You cast {spell.name}. {self.spell_slots[spell.level - 1] - self.spell_slots_used[spell.level - 1]} level {spell.level} slots remaining.') 
         elif spell.level==0:
             pass
@@ -87,7 +90,7 @@ class Char():
             'name': self.name,
             'classes': self.klasses,
             'spell_slots_used': self.spell_slots_used,
-            'prepared': self.prepared,
+            'prepared': [s.name for s in self.prepared],
             'trackers': [t.to_json() for t in list(self.trackers.values())]
         }
     

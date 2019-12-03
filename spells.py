@@ -14,8 +14,10 @@ try:
         sb = Spellbook() # Utility for retrieving spell information
     except ValueError:
         print('Spellbook file corrupted. No Spellbook available.')
+        sb = None
 except FileNotFoundError:
     print('Warning: No Spellbook available.')
+    sb = None
 
 opt=[] # Options which persist after certain functions
 
@@ -102,7 +104,8 @@ while True:
                     try:
                         if sb:
                             data = load_character(args[0].lower())
-                            data.update({'sb':sb})
+                            if sb:
+                                data.update({'sb':sb})
                             c = Char.from_json(data)
                         else:
                             c = Char.from_json(load_character(args[0].lower()))
