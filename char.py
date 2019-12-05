@@ -5,7 +5,7 @@ import utilities
 
 class Char():
     def __init__(self, **kwargs):
-        self.name = kwargs.get('name', '<no name>')
+        self.name = kwargs.get('name', 'temp')
         self.klasses = kwargs.get('classes', [])
         self.spell_slots_used = kwargs.get('spell_slots_used', [0] * 9)
         if 'sb' in kwargs and 'prepared' in kwargs:
@@ -16,6 +16,10 @@ class Char():
             self.prepared = []
         self.trackers = kwargs.get('trackers', {})
     
+    def __str__(self):
+        klasse_string = ' '.join([f'{k["name"].capitalize()} {k["level"]}' for k in self.klasses])
+        return f'{self.name.capitalize()} | {klasse_string}'
+
     @property
     def caster_level(self):
         return sum([int(k.get('caster') * k.get('level')) for k in self.klasses])
@@ -60,13 +64,13 @@ class Char():
             if self.has_spell_slot(spell.level) or cli.get_decision(f'No level {spell.level} slots available. Cast anyway?'):
                 self.spell_slots_used[spell.level - 1] += 1
                 print(f'You cast {spell.name}. {self.spell_slots[spell.level - 1] - self.spell_slots_used[spell.level - 1]} level {spell.level} slots remaining.') 
-        elif spell.level==0:
+        elif spell.level == 0:
             pass
         else:
             print(f'{spell.name} not prepared.')
                     
     def level_up(self, klasse = None):
-        if cli.get_decision('Add level to already present class?'):
+        if self.klasses and cli.get_decision('Add level to already present class?'):
             klasse = cli.get_choice('In which class was a level gained?', [k['name'] for k in self.klasses])
             [k for k in self.klasses if k.name == klasse][0]['level'] += 1
         else:
@@ -119,13 +123,15 @@ class Char():
             inpt = cli.get_input(prompt)
             if len(inpt) % 2 == 0 and len(inpt) != 0:
                 for i in range(0, len(inpt), 2):
-                    if inpt[i] not in constants.caster_types:
-                        caster_type = input(f'Class {inpt[i]} not found. Is this class a full, half or non caster? > ')
-                        if input(f'Confirm class {inpt[i]} ({caster_type} caster) (y/n) > ').strip() != 'y':
+                    klasse = inpt[i].lower()
+                    if klasse not in constants.caster_types:
+                        # caster_type = input(f'Class {klasse} not found. Is this class a full, half or non caster? > ')
+                        caster_type = cli.get_choice(f'Class {klasse} not found. What type of caster is it?', ['full', 'half', 'non'])
+                        if input(f'Confirm class {klasse} ({caster_type} caster) (y/n) > ').strip() != 'y':
                             prompt = 'Enter your character\'s classes and levels: <class> <level> <class> <level> '
                             break
                     else:
-                        caster_type = inpt[i]
+                        caster_type = klasse
 
                     if inpt[i + 1].isnumeric():
                         data['classes'].append({

@@ -60,20 +60,20 @@ def print_prepped(char):
     return ('spell',opt)
 
 def print_chars():
-    chars=current_chars()
+    chars = current_chars()
     if chars:
         char_string=''
         for i in range(len(chars)):
             char_string+=f"\n[{i+1}] {chars[i].get('name')} | "
-            first=True
+            first = True
             for klasse in chars[i].get('classes'):
                 if not first:
                     char_string+=', '
-                char_string+=f"{klasse.get('class').capitalize()} {klasse.get('level')}"
-                first=False
+                char_string += f"{klasse.get('name').capitalize()} {klasse.get('level')}"
+                first = False
         print(f'\nCharacters:\n{char_string}\n')
-        opt=[char.get('name').lower() for char in chars]
-        return ('char',opt)
+        opt = [char.get('name').lower() for char in chars]
+        return ('char', opt)
     else:
         print('No characters saved.')
 
@@ -84,7 +84,7 @@ def print_list(title, items):
     for item in items:
         count += 1
         print(f'\t[{count}] {item}')
-    print('\n')
+    print()
 
 def get_input(prompt):
     return [string for string in input(f'{prompt}> ').strip().split(' ') if string != ''] 
@@ -103,4 +103,3 @@ def get_choice(prompt, items):
         return items[int(choice) - 1]
     elif choice in items:
         return choice
-        

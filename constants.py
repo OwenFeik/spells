@@ -1,4 +1,5 @@
 spellslots = {
+    0: [0, 0, 0, 0, 0, 0, 0, 0, 0],
     1: [2, 0, 0, 0, 0, 0, 0, 0, 0],
     2: [3, 0, 0, 0, 0, 0, 0, 0, 0], 
     3: [4, 2, 0, 0, 0, 0, 0, 0, 0], 
@@ -42,11 +43,13 @@ caster_types = {
 
 commands = [
     'exit',
+    'save',
     'info',
     'i',
     'search',
     's',
     'roll',
+    'characters',
     'chars',
     'delchar',
     'clear',

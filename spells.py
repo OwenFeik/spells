@@ -3,11 +3,19 @@ from char import Char
 from tracker import Tracker
 from spellbook import Spellbook, Spell
 from cli import print_spell, print_prepped, print_chars, print_list, get_decision
-from dataloaders import load_character, save_character, delete_character
-from utilities import clean_string, clear_screen, parse_roll, level_prefix
+from dataloaders import load_character, save_character, delete_character, get_cache, save_cache
+from utilities import clear_screen, parse_roll, level_prefix, suggest_command
 from constants import commands
 
+cache = get_cache()
 c = None # Current player character
+
+if cache['character']:
+    try:
+        c = Char.from_json(load_character(cache['character']))
+        print(f'Character loaded: {str(c)}.')
+    except FileNotFoundError:
+        pass
 
 try:
     try:
@@ -24,7 +32,7 @@ opt=[] # Options which persist after certain functions
 while True:
     
     try:
-        inpt = [clean_string(string) for string in input('> ').split(' ') if string != '']
+        inpt = [w.strip() for w in input('> ').split(' ') if w != '']
         command = inpt.pop(0).lower()
         args = inpt
     except:
@@ -41,20 +49,20 @@ while True:
                 elif opt[0] == 'char':
                     args = [opt[1][index]]
                     command = 'char'
-                elif opt[0] == 'class':
-                    if opt[2] == 'cast':
-                        c.cast_spell(sb.get_spell(opt[3]), opt[1][index])
-                    elif opt[2] == 'prep':
-                        c.prepare_spell(sb.get_spell(opt[3]), opt[1][index])
-                    elif opt[2] == 'level_up':
-                        c.level_up(opt[1][index])
             else:
                 print('That option isn\'t available right now.')
         
         if command=='exit':
             if c:
                 save_character(c)
+            save_cache(c)
             raise SystemExit
+        elif command in ['save']:
+            if c:
+                save_character(c)
+                save_cache(c)
+            else:
+                print('No current character to save. Start one with "ch"!')
         elif command in ['info', 'i']:
             arg = ' '.join(args)
             spell = sb.get_spell(arg)
@@ -77,7 +85,7 @@ while True:
             parse_roll(args[0])
         elif re.match('[0-9]+d[0-9]+$', command):
             parse_roll(command)
-        elif command == 'chars':
+        elif command in ['characters', 'chars']:
             opt = print_chars()
         elif command == 'delchar':
             delete_character(args[0])
@@ -91,7 +99,7 @@ while True:
                     continue
 
             if args and args[0] in commands:
-                print(f'Name {args[0]} is reserved.')
+                print(f'Name {args[0]} is a command and thus reserved.')
             elif len(args) == 1:
                 c.trackers[args[0]] = Tracker(args[0])
             elif len(args) == 3 and args[1] == '=' and args[2].isnumeric():
@@ -112,32 +120,40 @@ while True:
                             c = Char.from_json(data)
                         else:
                             c = Char.from_json(load_character(args[0].lower()))
-                        print(f'Character loaded: {c.name}.')
+                        print(f'Character loaded: {str(c)}.')
                     except ValueError:
                         print(f'Ran into issue loading character {args[0]}.')
                 except FileNotFoundError:
                     print(f'No character {args[0]} found.')
             else:
                 if c:
-                    print(f'Current character: {c.name}.')
+                    print(f'Current character: {str(c)}.')
                 else:
                     c = Char.from_wizard()
         elif command in ['prep','p']:
             if c:
+                if not args:
+                    print('Usage: "p <spell>".')
+                    continue
+
                 spell=sb.get_spell(' '.join(args))
                 if spell:
-                    opt=c.prepare_spell(spell)
+                    c.prepare_spell(spell)
                 else:
                     print('Sorry, I couldn\'t find that spell.')
             else:
                 print('To prepare spells, start a character with "char".')
         elif command in ['prepped','prepared','pd']:
             if c:
-                opt=print_prepped(c)
+                opt = print_prepped(c)
             else:
                 print('To prepare spells, start a character with "char".')
         elif command in ['cast','c']:
             if c:
+                if not args:
+                    print('Usage: "c <spell>" or "c <level>".')
+                    continue
+
                 spell = ' '.join(args)
                 if spell.isnumeric():
                     spell = Spell.from_json({
@@ -146,10 +162,10 @@ while True:
                         'school': 'placeholder'
                     })
                 else:
-                    spell=sb.get_spell(spell)
+                    spell = sb.get_spell(spell)
                 
                 if spell:
-                    opt=c.cast_spell(spell)
+                    c.cast_spell(spell)
                 else:
                     print(f'No spell {args[0]} found.')
             else:
@@ -172,14 +188,19 @@ while True:
             if args:
                 c.level_up(args[0])
             else:
-                opt = c.level_up()
+                c.level_up()
         elif c and command in c.trackers:
             if args:
                 print(c.trackers[command].handle_command(args)) # Returns a string describing the operation undertaken
             else:
                 print(c.trackers[command])
         else:
-            print('Unknown command: ' + command)
+            if command:
+                suggestion = suggest_command(command)
+                if suggestion:
+                    print(f'Unknown command: {command}. Perhaps you meant "{suggestion}".')
+                else:
+                    print(f'Unknown command: {command}.')
 
     except Exception as e:
         print(f'Ran into a problem with that command: {e}')

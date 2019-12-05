@@ -10,14 +10,15 @@ def get_spells():
         return json.load(f)
        
 def load_character(name):
-    with open(f'saves/{name}.json','r') as f:
+    with open(f'saves/{name.lower()}.json','r') as f:
         return json.load(f)
 
 def save_character(char):
     if not os.path.exists('saves'):
         os.mkdir('saves')
+
     with open(f'saves/{char.name.lower()}.json','w') as f:
-        json.dump(char.to_json(),f,indent=4)
+        json.dump(char.to_json(), f, indent = 4)
 
 def delete_character(char):
     if os.path.exists(f'saves/{char}.json'):
@@ -27,14 +28,25 @@ def delete_character(char):
         print(f'No character "{char}" found.')
 
 def current_chars():
-    saves=os.listdir('saves')
-    chars=[]
+    saves = os.listdir('saves')
+    chars = []
     for save in saves:
         if '.json' in save:
             with open(f'saves/{save}','r') as f:
                 chars.append(json.load(f))
     return chars
 
-def get_sorcery_points(level):
-    with open(f'resources/sorcerer.json','r') as f:
-        return json.load(f).get('sorc_points').get(str(level))
+def get_cache():
+    try:
+        with open('resources/cache.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {
+            'character': None
+        }
+
+def save_cache(c):
+    with open('resources/cache.json', 'w') as f:
+        json.dump({
+            'character': c.name.lower()
+        }, f)
