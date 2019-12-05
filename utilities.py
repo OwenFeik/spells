@@ -1,12 +1,7 @@
 import os # Clear screen
 from random import randint # Roll dice
-
-def clean_string(string):
-    while len(string)>0 and string[0]==' ':
-        string=string[1:]
-    while len(string)>0 and string[len(string)-1]==' ':
-        string=string[:len(string)-1]
-    return string
+from difflib import get_close_matches
+from constants import commands
 
 def printable_paragraph(string,width):
     if len(string)>width:
@@ -15,7 +10,7 @@ def printable_paragraph(string,width):
         word=''
         for c in string:
             if len(line)+len(word)>width:
-                out+='\n'+clean_string(line)
+                out+='\n'+line.strip()
                 line=''
 
             if c==' ':
@@ -24,12 +19,12 @@ def printable_paragraph(string,width):
             elif c=='\n':
                 line+=f' {word}'
                 word=''
-                out+='\n'+clean_string(line)
+                out+='\n'+line.strip()
                 line=''
             else:
                 word+=c
 
-        out+='\n'+clean_string(line+' '+word)
+        out+='\n'+(line+' '+word).strip()
             
         return out
     else:
@@ -122,3 +117,9 @@ def parse_spell_query(string):
                 query += c
 
     return queries
+        
+def suggest_command(command):
+    suggestion = get_close_matches(command, commands, 1)
+    if suggestion:
+        suggestion = suggestion[0]
+    return suggestion
