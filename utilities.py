@@ -49,7 +49,9 @@ def clear_screen():
         os.system('clear')
 
 def parse_roll(string):
-    qty,die=(int(c) for c in string.split('d'))
+    qty, die = string.split('d')
+    qty = int(qty) if len(qty) > 0 else 1
+    die = int(die)
 
     rolls=[]
     for _ in range(0,qty):
@@ -59,11 +61,34 @@ def parse_roll(string):
         out=f'Roll: {rolls[0]}'
     else:
         out='Rolls: '
-        for result in rolls:
-            out+=f'{str(result)}, '
+        for r in rolls:
+            out+=f'{str(r)}, '
         out=f'{out[:-2]}\tTotal: {sum(rolls)}'
     print(out)
 
+    return (rolls, die) # for rerolling, etc
+
+def reroll(rolls, die, rerolls):
+    initial = sum(rolls)
+    qty = len(rolls)
+    
+    for r in rerolls:
+        rolls[r - 1] = randint(1, die)
+
+    final = sum(rolls)
+
+    change = f'({"+" if final >= initial else "-"}{abs(final - initial)})'
+
+    if qty == 1:
+        out=f'Roll: {rolls[0]} {change}'
+    else:
+        out='Rolls: '
+        for r in rolls:
+            out += f'{str(r)}, '
+        out = f'{out[:-2]}\tTotal: {final} {change}'
+    print(out)
+
+    return (rolls, die)
 
 # Parse a string like "school:evocation time:action"
 def parse_spell_query(string):

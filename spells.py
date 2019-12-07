@@ -3,8 +3,8 @@ from char import Char
 from tracker import Tracker
 from spellbook import Spellbook, Spell
 from cli import print_spell, print_prepped, print_chars, print_list, get_decision
-from dataloaders import load_character, save_character, delete_character, get_cache, save_cache
-from utilities import clear_screen, parse_roll, level_prefix, suggest_command
+from dataloaders import load_character, save_character, delete_character, get_cache, save_cache, clear_cache
+from utilities import clear_screen, parse_roll, level_prefix, suggest_command, reroll
 from constants import commands
 
 cache = get_cache()
@@ -27,12 +27,13 @@ except FileNotFoundError:
     print('Warning: No Spellbook available.')
     sb = None
 
-opt=[] # Options which persist after certain functions
+opt = [] # Options which persist after certain functions
+roll = ([], None) # Dice previously rolled, for re-rolls
 
 while True:
     
     try:
-        inpt = [w.strip() for w in input('> ').split(' ') if w != '']
+        inpt = [w.strip() for w in input('> ').replace(',', '').split(' ') if w != '']
         command = inpt.pop(0).lower()
         args = inpt
     except:
@@ -53,9 +54,14 @@ while True:
                 print('That option isn\'t available right now.')
         
         if command=='exit':
-            if c:
-                save_character(c)
-            save_cache(c)
+            if not args or not args[0] == 'nosave':
+                if c:
+                    save_character(c)
+                    save_cache(c)
+                else:
+                    save_cache()
+            else:
+                clear_cache()
             raise SystemExit
         elif command in ['save']:
             if c:
@@ -83,8 +89,17 @@ while True:
                 print('Couldn\'t find any spells matching that description.')
         elif command == 'roll':
             parse_roll(args[0])
-        elif re.match('[0-9]+d[0-9]+$', command):
-            parse_roll(command)
+        elif re.match('^[0-9]*d[0-9]+$', command):
+            roll = parse_roll(command)
+        elif command in [ 'reroll', 'rr']:
+            for i in range(len(args)):
+                if args[i].isnumeric and int(args[i]) <= len(roll[0]):
+                    args[i] = int(args[i])
+                else:
+                    print('Usage: "rr <dice> <to> <re> <roll>", where dice are identified by their index.')
+                    break
+            else:
+                roll = reroll(roll[0], roll[1], args)
         elif command in ['characters', 'chars']:
             opt = print_chars()
         elif command == 'delchar':
@@ -109,8 +124,8 @@ while True:
                     c.print_trackers()
                 else:
                     print('Usage: "tracker <name>" or "tracker <name> = <number>".')
-        elif command in ['char','ch']:
-            if args:
+        elif command in ['char', 'ch', 'newchar']:
+            if args and not command == 'newchar':
                 try:
                     try:
                         if sb:
@@ -126,10 +141,10 @@ while True:
                 except FileNotFoundError:
                     print(f'No character {args[0]} found.')
             else:
-                if c:
-                    print(f'Current character: {str(c)}.')
-                else:
+                if command == 'newchar' or not c:
                     c = Char.from_wizard()
+                else:
+                    print(f'Current character: {str(c)}.')
         elif command in ['prep','p']:
             if c:
                 if not args:

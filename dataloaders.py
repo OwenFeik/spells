@@ -45,8 +45,12 @@ def get_cache():
             'character': None
         }
 
-def save_cache(c):
+def save_cache(c = None):
     with open('resources/cache.json', 'w') as f:
         json.dump({
-            'character': c.name.lower()
+            'character': c.name.lower() if c else None
         }, f)
+
+def clear_cache():
+    if os.path.exists('resources/cache.json'):
+        os.remove('resources/cache.json')
