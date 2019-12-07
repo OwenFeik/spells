@@ -43,6 +43,10 @@ class Char():
     def long_rest(self):
         self.spell_slots_used = [0] * 9
 
+        for t in self.trackers:
+            if self.trackers[t].reset_on_rest:
+                self.trackers[t].reset()
+
     def has_spell_slot(self,level):
         if level == 0:
             return True
@@ -72,7 +76,7 @@ class Char():
     def level_up(self, klasse = None):
         if self.klasses and cli.get_decision('Add level to already present class?'):
             klasse = cli.get_choice('In which class was a level gained?', [k['name'] for k in self.klasses])
-            [k for k in self.klasses if k.name == klasse][0]['level'] += 1
+            [k for k in self.klasses if k['name'] == klasse][0]['level'] += 1
         else:
             klasse = input('In which class was a level gained? > ')
             if klasse in constants.caster_types:
