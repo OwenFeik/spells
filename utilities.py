@@ -105,6 +105,7 @@ def parse_spell_query(string):
         'co': 'components',
         'd': 'duration',
         't': 'desc',
+        'r': 'ritual',
         'range': 'rnge'
     }
 
@@ -121,6 +122,8 @@ def parse_spell_query(string):
                     if query in query_shortenings:
                         query = query_shortenings[query]
                     queries[query.lower()] = criteria.lower()
+                elif query in ['r', 'ritual']:
+                    queries['ritual'] = 'true'
                 
                 query = ''
                 criteria = ''
