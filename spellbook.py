@@ -46,40 +46,43 @@ class Spellbook():
         return spells
 
 class Spell():
-    def __init__(self,name,school,level,cast,rnge,components,duration,desc):
-        self.name=name
-        self.school=school
-        self.level=level
-        self.cast=cast
-        self.rnge=rnge
-        self.components=components
-        self.duration=duration
-        self.desc=desc
+    def __init__(self, name, school, level, cast, rnge, components, duration, desc, ritual):
+        self.name = name
+        self.school = school
+        self.level = level
+        self.cast = cast
+        self.rnge = rnge
+        self.components = components
+        self.duration = duration
+        self.desc = desc
+        self.ritual = ritual
 
     def __str__(self):
-        return f'\n{self.name} | {self.school}\n{self.cast} | {self.rnge}\n{self.components} | {self.duration}\n\n{self.desc}\n'
+        return f'\n{self.name} | {self.school}\n{self.cast} | {self.rnge}{" | Ritual" if self.ritual else ""}\n{self.components} | {self.duration}\n\n{self.desc}\n'
 
     def to_json(self):
         return {
-            'name':self.name,
-            'school':self.school,
-            'level':self.level,
-            'cast':self.cast,
-            'range':self.rnge,
-            'components':self.components,
-            'duration':self.duration,
-            'description':self.desc
+            'name': self.name,
+            'school': self.school,
+            'level': self.level,
+            'cast': self.cast,
+            'range': self.rnge,
+            'components': self.components,
+            'duration': self.duration,
+            'description': self.desc,
+            'ritual': self.ritual
         }
 
     @staticmethod
     def from_json(data):
-        name=data.get('name')
-        school=data.get('school')
-        level=data.get('level')
-        cast=data.get('cast')
-        rnge=data.get('range')
-        components=data.get('components')
-        duration=data.get('duration')
-        desc=data.get('description')
+        name = data.get('name', 'N/A')
+        school = data.get('school', 'N/A')
+        level = data.get('level', -1)
+        cast = data.get('cast', 'N/A')
+        rnge = data.get('range', 'N/A')
+        components = data.get('components', 'N/A')
+        duration = data.get('duration', 'N/A')
+        desc = data.get('description', 'N/A')
+        ritual = data.get('ritual', False)
         
-        return Spell(name,school,level,cast,rnge,components,duration,desc)
+        return Spell(name, school, level, cast, rnge, components, duration, desc, ritual)

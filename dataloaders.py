@@ -40,10 +40,10 @@ def get_cache():
     try:
         with open('resources/cache.json', 'r') as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         return {
             'character': None
-        }
+        }        
 
 def save_cache(c = None):
     with open('resources/cache.json', 'w') as f:

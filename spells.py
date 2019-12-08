@@ -33,8 +33,8 @@ roll = ([], None) # Dice previously rolled, for re-rolls
 while True:
     
     try:
-        inpt = [w.strip() for w in input('> ').replace(',', '').split(' ') if w != '']
-        command = inpt.pop(0).lower()
+        inpt = [w.strip() for w in input('> ').lower().replace(',', '').split(' ') if w != '']
+        command = inpt.pop(0)
         args = inpt
     except:
         command = ''

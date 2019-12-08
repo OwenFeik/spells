@@ -19,7 +19,8 @@ The resources folder ("./resources/") should contain "spells.json": a JSON file 
         "range": "150 feet",
         "components": "V S M: A tiny ball of bat guano and sulfur",
         "duration": "Instantaneous",
-        "description": "Boom."
+        "description": "Boom.",
+        "ritual": false
     }
 ```
 ### Searching for Spells
@@ -38,6 +39,7 @@ Arguments for ```search``` should be formatted like so: ```n: Fireball co: "bat 
 * ```co``` or ```components``` , components of the spell.
 * ```d``` or ```duration``` , the spell's duration.
 * ```t``` or ```desc``` , the description text.
+* ```r``` or ```ritual```
 
 ### Creating and Using a Character
 

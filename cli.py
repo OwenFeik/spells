@@ -24,10 +24,16 @@ def print_spell(spell):
     else:
         out=f'\n{spell.name}\n{school}'
 
-    if len(spell.cast)+len(spell.rnge)+24<width:
-        out+=f'\nCasting Time: {spell.cast} | Range: {spell.rnge}'
+    if spell.ritual:
+        if len(spell.cast) + len(spell.rnge) + 33 < width:
+            out += f'\nCasting Time: {spell.cast} | Ritual | Range: {spell.rnge}'
+        else:
+            out += f'\nCasting Time: {spell.cast} | Ritual\nRange: {spell.rnge}'
     else:
-        out+=f'\nCasting Time: {spell.cast}\nRange: {spell.rnge}'
+        if len(spell.cast)+len(spell.rnge)+24<width:
+            out+=f'\nCasting Time: {spell.cast} | Range: {spell.rnge}'
+        else:
+            out+=f'\nCasting Time: {spell.cast}\nRange: {spell.rnge}'
     
     if len(spell.components)+len(spell.duration)+25<width:
         out+=f'\nComponents: {spell.components} | Duration: {spell.duration}'
