@@ -7,16 +7,6 @@ from dataloaders import load_character, save_character, delete_character, get_ca
 from utilities import clear_screen, parse_roll, level_prefix, suggest_command, reroll
 from constants import commands
 
-cache = get_cache()
-c = None # Current player character
-
-if cache['character']:
-    try:
-        c = Char.from_json(load_character(cache['character']))
-        print(f'Character loaded: {str(c)}.')
-    except FileNotFoundError:
-        pass
-
 try:
     try:
         sb = Spellbook() # Utility for retrieving spell information
@@ -26,6 +16,18 @@ try:
 except FileNotFoundError:
     print('Warning: No Spellbook available.')
     sb = None
+
+cache = get_cache()
+c = None # Current player character
+
+if cache['character']:
+    try:
+        data = load_character(cache['character'])
+        data.update({'sb': sb})
+        c = Char.from_json(data)
+        print(f'Character loaded: {str(c)}.')
+    except FileNotFoundError:
+        pass
 
 opt = [] # Options which persist after certain functions
 roll = ([], None) # Dice previously rolled, for re-rolls
