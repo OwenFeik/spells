@@ -46,6 +46,9 @@ def get_cache():
         }        
 
 def save_cache(c = None):
+    if not os.path.exists('resources'):
+        os.mkdir('resources')
+
     with open('resources/cache.json', 'w') as f:
         json.dump({
             'character': c.name.lower() if c else None
