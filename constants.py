@@ -58,6 +58,8 @@ commands = [
     'cls',
     'tracker',
     't',
+    'deltracker',
+    'dt',
     'char',
     'ch',
     'newchar',

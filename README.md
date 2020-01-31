@@ -75,6 +75,8 @@ These commands all require an argument of ```<value>``` , the quantity applied t
 * ```<set or => <value>```: Set the tracker to ```<value>``` .
 * ```default <value>``` : Set the trackers default to ```<value>``` .
 
+You can delete a tracker with ```deltracker <name>``` or ```dt <name>``` .
+
 ### Preparing and Casting Spells
 
 Spells can be prepared using the command ```prep <spell name>``` (or just ```p``` ). This will toggle whether your character has them prepared. The list of prepared spells can be viewed with ```prepared``` (or ```prepped``` or ```pd``` ).

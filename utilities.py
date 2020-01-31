@@ -151,3 +151,7 @@ def suggest_command(command):
     if suggestion:
         suggestion = suggestion[0]
     return suggestion
+
+def capitalise(string):
+    words = string.split(' ')
+    return ' '.join([w.capitalize() for w in words])
