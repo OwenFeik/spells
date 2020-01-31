@@ -1,49 +1,49 @@
 import os # Clear screen
-from random import randint # Roll dice
-from difflib import get_close_matches
-from constants import commands
+import random # Roll dice
+import difflib # Suggest similar commands
+import constants
 
-def printable_paragraph(string,width):
-    if len(string)>width:
-        out=''
-        line=''
-        word=''
+def printable_paragraph(string, width):
+    if len(string) > width:
+        out = ''
+        line = ''
+        word = ''
         for c in string:
-            if len(line)+len(word)>width:
-                out+='\n'+line.strip()
-                line=''
+            if len(line) + len(word) > width:
+                out += '\n' + line.strip()
+                line = ''
 
-            if c==' ':
-                line+=f' {word}'
-                word=''
-            elif c=='\n':
-                line+=f' {word}'
-                word=''
-                out+='\n'+line.strip()
-                line=''
+            if c == ' ':
+                line += f' {word}'
+                word = ''
+            elif c == '\n':
+                line += f' {word}'
+                word = ''
+                out += '\n' + line.strip()
+                line = ''
             else:
-                word+=c
+                word += c
 
-        out+='\n'+(line+' '+word).strip()
+        out += '\n' + (line + ' ' + word).strip()
             
         return out
     else:
         return string
 
 def level_prefix(level):
-    if level==0:
+    if level == 0:
         return 'Cantrip'
-    elif level==1:
+    elif level == 1:
         return '1st Level'
-    elif level==2:
+    elif level == 2:
         return '2nd Level'
-    elif level==3:
+    elif level == 3:
         return '3rd Level'
     else:
         return f'{level}th Level'
 
 def clear_screen():
-    if os.name=='nt':
+    if os.name == 'nt':
         os.system('cls')
     else:
         os.system('clear')
@@ -54,16 +54,16 @@ def parse_roll(string):
     die = int(die)
 
     rolls=[]
-    for _ in range(0,qty):
-        rolls.append(randint(1,die))
+    for _ in range(0, qty):
+        rolls.append(random.randint(1, die))
 
-    if qty==1:
-        out=f'Roll: {rolls[0]}'
+    if qty == 1:
+        out = f'Roll: {rolls[0]}'
     else:
-        out='Rolls: '
+        out = 'Rolls: '
         for r in rolls:
-            out+=f'{str(r)}, '
-        out=f'{out[:-2]}\tTotal: {sum(rolls)}'
+            out += f'{str(r)}, '
+        out = f'{out[:-2]}\tTotal: {sum(rolls)}'
     print(out)
 
     return (rolls, die) # for rerolling, etc
@@ -73,16 +73,16 @@ def reroll(rolls, die, rerolls):
     qty = len(rolls)
     
     for r in rerolls:
-        rolls[r - 1] = randint(1, die)
+        rolls[r - 1] = random.randint(1, die)
 
     final = sum(rolls)
 
     change = f'({"+" if final >= initial else "-"}{abs(final - initial)})'
 
     if qty == 1:
-        out=f'Roll: {rolls[0]} {change}'
+        out = f'Roll: {rolls[0]} {change}'
     else:
-        out='Rolls: '
+        out = 'Rolls: '
         for r in rolls:
             out += f'{str(r)}, '
         out = f'{out[:-2]}\tTotal: {final} {change}'
@@ -105,7 +105,7 @@ def parse_spell_query(string):
         'co': 'components',
         'd': 'duration',
         't': 'desc',
-        'r': 'ritual',
+        'rit': 'ritual',
         'range': 'rnge'
     }
 
@@ -122,7 +122,7 @@ def parse_spell_query(string):
                     if query in query_shortenings:
                         query = query_shortenings[query]
                     queries[query.lower()] = criteria.lower()
-                elif query in ['r', 'ritual']:
+                elif query in ['rit', 'ritual']:
                     queries['ritual'] = 'true'
                 
                 query = ''
@@ -147,7 +147,7 @@ def parse_spell_query(string):
     return queries
         
 def suggest_command(command):
-    suggestion = get_close_matches(command, commands, 1)
+    suggestion = difflib.get_close_matches(command, constants.commands, 1)
     if suggestion:
         suggestion = suggestion[0]
     return suggestion
