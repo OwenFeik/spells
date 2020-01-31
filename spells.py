@@ -105,7 +105,7 @@ while True:
         elif command in ['characters', 'chars']:
             opt = cli.print_chars()
         elif command == 'delchar':
-            dataloaders.delete_character(args[0])
+            dataloaders.delete_character(' '.join(args))
         elif command in ['clear','cls']:
             utilities.clear_screen()
         elif command in ['tracker', 't']:
