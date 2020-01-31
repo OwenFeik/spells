@@ -1,15 +1,15 @@
 import re # Check command patterns
-from char import Char
-from tracker import Tracker
-from spellbook import Spellbook, Spell
-from cli import print_spell, print_prepped, print_chars, print_list, get_decision
-from dataloaders import load_character, save_character, delete_character, get_cache, save_cache, clear_cache
-from utilities import clear_screen, parse_roll, level_prefix, suggest_command, reroll
-from constants import commands
+import char
+import tracker
+import spellbook
+import cli
+import dataloaders
+import utilities
+import constants
 
 try:
     try:
-        sb = Spellbook() # Utility for retrieving spell information
+        sb = spellbook.Spellbook() # Utility for retrieving spell information
     except ValueError:
         print('Spellbook file corrupted. No Spellbook available.')
         sb = None
@@ -17,14 +17,14 @@ except FileNotFoundError:
     print('Warning: No Spellbook available.')
     sb = None
 
-cache = get_cache()
+cache = dataloaders.get_cache()
 c = None # Current player character
 
 if cache['character']:
     try:
-        data = load_character(cache['character'])
+        data = dataloaders.load_character(cache['character'])
         data.update({'sb': sb})
-        c = Char.from_json(data)
+        c = char.Char.from_json(data)
         print(f'Character loaded: {str(c)}.')
     except FileNotFoundError:
         pass
@@ -58,41 +58,41 @@ while True:
         if command=='exit':
             if not args or not args[0] == 'nosave':
                 if c:
-                    save_character(c)
-                    save_cache(c)
+                    dataloaders.save_character(c)
+                    dataloaders.save_cache(c)
                 else:
-                    save_cache()
+                    dataloaders.save_cache()
             else:
-                clear_cache()
+                dataloaders.clear_cache()
             raise SystemExit
         elif command in ['save']:
             if c:
-                save_character(c)
-                save_cache(c)
+                dataloaders.save_character(c)
+                dataloaders.save_cache(c)
             else:
                 print('No current character to save. Start one with "ch"!')
         elif command in ['info', 'i']:
             arg = ' '.join(args)
             spell = sb.get_spell(arg)
             if spell:
-                print_spell(spell)
+                cli.print_spell(spell)
             else:
                 print('Sorry, I couldn\'t find that spell.')
         elif command in ['search', 's']:
             spells = sb.handle_query(' '.join(args))
             if spells:
                 if len(spells) == 1:
-                    print_spell(spells[0])
+                    cli.print_spell(spells[0])
                 else:
                     spell_names = [spell.name for spell in spells]
-                    print_list('Results', spell_names)
+                    cli.print_list('Results', spell_names)
                     opt = ['spell', spell_names]
             else:
                 print('Couldn\'t find any spells matching that description.')
         elif command == 'roll':
-            parse_roll(args[0])
+            utilities.parse_roll(args[0])
         elif re.match('^[0-9]*d[0-9]+$', command):
-            roll = parse_roll(command)
+            roll = utilities.parse_roll(command)
         elif command in [ 'reroll', 'rr']:
             for i in range(len(args)):
                 if args[i].isnumeric and int(args[i]) <= len(roll[0]):
@@ -101,42 +101,52 @@ while True:
                     print('Usage: "rr <dice> <to> <re> <roll>", where dice are identified by their index.')
                     break
             else:
-                roll = reroll(roll[0], roll[1], args)
+                roll = utilities.reroll(roll[0], roll[1], args)
         elif command in ['characters', 'chars']:
-            opt = print_chars()
+            opt = cli.print_chars()
         elif command == 'delchar':
-            delete_character(args[0])
+            dataloaders.delete_character(args[0])
         elif command in ['clear','cls']:
-            clear_screen()
+            utilities.clear_screen()
         elif command in ['tracker', 't']:
             if not c:
-                if get_decision('No current character, which is required to use trackers. Create a temporary character?'):
-                    c = Char()
+                if cli.get_decision('No current character, which is required to use trackers. Create a temporary character?'):
+                    c = char.Char()
                 else:
                     continue
 
-            if args and args[0] in commands:
+            if args and args[0] in constants.commands:
                 print(f'Name {args[0]} is a command and thus reserved.')
             elif len(args) == 1:
-                c.trackers[args[0]] = Tracker(args[0])
+                c.trackers[args[0]] = tracker.Tracker(args[0])
             elif len(args) == 3 and args[1] == '=' and args[2].isnumeric():
-                c.trackers[args[0]] = Tracker(args[0], default = int(args[2]))
+                c.trackers[args[0]] = tracker.Tracker(args[0], default = int(args[2]))
             else:
                 if c.trackers:
                     c.print_trackers()
                 else:
                     print('Usage: "tracker <name>" or "tracker <name> = <number>".')
+        elif command in ['deltracker', 'dt']:
+            if not c:
+                print('No current character, cannot delete tracker.')
+                continue
+
+            try:
+                del c.trackers[args[0]]
+                print(f'Tracker {args[0]} deleted.')
+            except KeyError:
+                print(f'Tracker {args[0]} does not exist.')
         elif command in ['char', 'ch', 'newchar']:
             if args and not command == 'newchar':
                 try:
                     try:
                         if sb:
-                            data = load_character(args[0].lower())
+                            data = dataloaders.load_character(args[0].lower())
                             if sb:
                                 data.update({'sb':sb})
-                            c = Char.from_json(data)
+                            c = char.Char.from_json(data)
                         else:
-                            c = Char.from_json(load_character(args[0].lower()))
+                            c = char.Char.from_json(dataloaders.load_character(args[0].lower()))
                         print(f'Character loaded: {str(c)}.')
                     except ValueError:
                         print(f'Ran into issue loading character {args[0]}.')
@@ -144,7 +154,7 @@ while True:
                     print(f'No character {args[0]} found.')
             else:
                 if command == 'newchar' or not c:
-                    c = Char.from_wizard()
+                    c = char.Char.from_wizard()
                 else:
                     print(f'Current character: {str(c)}.')
         elif command in ['prep','p']:
@@ -162,7 +172,7 @@ while True:
                 print('To prepare spells, start a character with "char".')
         elif command in ['prepped','prepared','pd']:
             if c:
-                opt = print_prepped(c)
+                opt = cli.print_prepped(c)
             else:
                 print('To prepare spells, start a character with "char".')
         elif command in ['cast','c']:
@@ -173,8 +183,8 @@ while True:
 
                 spell = ' '.join(args)
                 if spell.isnumeric():
-                    spell = Spell.from_json({
-                        'name':f'a {level_prefix(int(spell))} Spell', 
+                    spell = spellbook.Spell.from_json({
+                        'name':f'a {utilities.level_prefix(int(spell))} Spell', 
                         'level': int(spell),
                         'school': 'placeholder'
                     })
@@ -193,7 +203,14 @@ while True:
             else:
                 print('No current character.')
         elif command=='rename':
-            c.name=args[0]
+            if not args:
+                print('Usage: "rename <new name>"')
+            elif not c:
+                print('No current character to rename. Start or load one with "char".')
+            else:            
+                old_name = c.name
+                c.name = ' '.join(args)
+                print(f'Renamed {utilities.capitalise(old_name)} to {utilities.capitalise(c.name)}.')
         elif command=='rest':
             if c:
                 c.long_rest()
@@ -213,7 +230,7 @@ while True:
                 print(c.trackers[command])
         else:
             if command:
-                suggestion = suggest_command(command)
+                suggestion = utilities.suggest_command(command)
                 if suggestion:
                     print(f'Unknown command: {command}. Perhaps you meant "{suggestion}".')
                 else:

@@ -17,8 +17,8 @@ class Char():
         self.trackers = kwargs.get('trackers', {})
     
     def __str__(self):
-        klasse_string = ' '.join([f'{k["name"].capitalize()} {k["level"]}' for k in self.klasses])
-        return f'{self.name.capitalize()} | {klasse_string}'
+        klasse_string = ' '.join([f'{utilities.capitalise(k["name"])} {k["level"]}' for k in self.klasses])
+        return f'{utilities.capitalise(self.name)} | {klasse_string}'
 
     @property
     def caster_level(self):
@@ -96,7 +96,7 @@ class Char():
             self.klasses.append({
                 'name': klasse,
                 'level': 1,
-                'caster': constants.caster_types[klasse]
+                'caster': constants.caster_types[caster_type]
             })
 
     def to_json(self):
