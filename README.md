@@ -39,7 +39,8 @@ Arguments for ```search``` should be formatted like so: ```n: Fireball co: "bat 
 * ```co``` or ```components``` , components of the spell.
 * ```d``` or ```duration``` , the spell's duration.
 * ```t``` or ```desc``` , the description text.
-* ```r``` or ```ritual```
+
+As well as ```rit``` or ```ritual``` , which operates slightly differently in that no argument need be supplied, instead by inclusion of the search term, only spells which are rituals will be returned.
 
 ### Creating and Using a Character
 

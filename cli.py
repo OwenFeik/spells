@@ -1,28 +1,27 @@
-from os import get_terminal_size
-
-from dataloaders import current_chars
-from utilities import printable_paragraph, level_prefix
+import os # get_terminal_size
+import dataloaders
+import utilities
 
 def print_spell(spell):
-    width=get_terminal_size()[0]
-    if width<60:
+    width = os.get_terminal_size()[0]
+    if width < 60:
         pass
-    elif width<120:
-        width=int(0.8*width)
+    elif width < 120:
+        width = int(0.8 * width)
     else:
-        width=int(0.6*width)
+        width = int(0.6 * width)
 
-    out=''
+    out = ''
 
-    if spell.level==0:
-        school=spell.school+' Cantrip'
+    if spell.level == 0:
+        school = spell.school + ' Cantrip'
     else:
-        school=f'{level_prefix(spell.level)} {spell.school}'
+        school = f'{utilities.level_prefix(spell.level)} {spell.school}'
 
-    if len(spell.name)+len(school)<width:
-        out=f'\n{spell.name} | {school}'
+    if len(spell.name) + len(school) < width:
+        out = f'\n{spell.name} | {school}'
     else:
-        out=f'\n{spell.name}\n{school}'
+        out = f'\n{spell.name}\n{school}'
 
     if spell.ritual:
         if len(spell.cast) + len(spell.rnge) + 33 < width:
@@ -30,52 +29,52 @@ def print_spell(spell):
         else:
             out += f'\nCasting Time: {spell.cast} | Ritual\nRange: {spell.rnge}'
     else:
-        if len(spell.cast)+len(spell.rnge)+24<width:
-            out+=f'\nCasting Time: {spell.cast} | Range: {spell.rnge}'
+        if len(spell.cast)+len(spell.rnge) + 24 < width:
+            out += f'\nCasting Time: {spell.cast} | Range: {spell.rnge}'
         else:
-            out+=f'\nCasting Time: {spell.cast}\nRange: {spell.rnge}'
+            out += f'\nCasting Time: {spell.cast}\nRange: {spell.rnge}'
     
-    if len(spell.components)+len(spell.duration)+25<width:
-        out+=f'\nComponents: {spell.components} | Duration: {spell.duration}'
+    if len(spell.components) + len(spell.duration) + 25 < width:
+        out += f'\nComponents: {spell.components} | Duration: {spell.duration}'
     else:
-        components=printable_paragraph('Components: '+spell.components,width)
-        duration=printable_paragraph('Duration: '+spell.duration,width)
-        out+=f'\n{components}\n{duration}'
+        components = utilities.printable_paragraph('Components: ' + spell.components, width)
+        duration = utilities.printable_paragraph('Duration: ' + spell.duration, width)
+        out += f'\n{components}\n{duration}'
 
-    out+=f'\n{printable_paragraph(spell.desc,width)}\n'
+    out += f'\n{utilities.printable_paragraph(spell.desc,width)}\n'
 
     print(out)
 
 def print_prepped(char):
-    out=''
-    opt=[]
+    out = ''
+    opt = []
 
-    spells={i:[] for i in range(0,10)}
+    spells = {i: [] for i in range(0, 10)}
         
-    for spell in sorted(char.prepared, key = lambda k:k.name):
+    for spell in sorted(char.prepared, key = lambda k: k.name):
         spells[spell.level].append(spell.name)
 
-    for i in range(0,10):
+    for i in range(0, 10):
         if spells[i]:
-            out+=f'\n\n{level_prefix(i)}:'
+            out += f'\n\n{utilities.level_prefix(i)}:'
             for spell in spells[i]:
                 opt.append(spell)
-                out+=f'\n\t[{len(opt)}] {spell}'
+                out += f'\n\t[{len(opt)}] {spell}'
 
-    print(out+'\n')
-    return ('spell',opt)
+    print(out + '\n')
+    return ('spell', opt)
 
 def print_chars():
-    chars = current_chars()
+    chars = dataloaders.current_chars()
     if chars:
         char_string=''
         for i in range(len(chars)):
-            char_string+=f"\n[{i+1}] {chars[i].get('name')} | "
+            char_string += f"\n[{i+1}] {chars[i].get('name')} | "
             first = True
             for klasse in chars[i].get('classes'):
                 if not first:
-                    char_string+=', '
-                char_string += f"{klasse.get('name').capitalize()} {klasse.get('level')}"
+                    char_string += ', '
+                char_string += f"{utilities.capitalise(klasse.get('name'))} {klasse.get('level')}"
                 first = False
         print(f'\nCharacters:\n{char_string}\n')
         opt = [char.get('name').lower() for char in chars]
