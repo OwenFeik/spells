@@ -23,6 +23,9 @@ The resources folder ("./resources/") should contain "spells.json": a JSON file 
         "ritual": false
     }
 ```
+
+An example file is included, though the user is free to extend or replace this by editing or replacing the file.
+
 ### Searching for Spells
 
 Spells in the spells.json file can be searched from the app through the following commands:
