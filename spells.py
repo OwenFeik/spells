@@ -52,8 +52,12 @@ while True:
                 elif opt[0] == 'char':
                     args = [opt[1][index]]
                     command = 'char'
+                elif opt[0] == 'roll':
+                    command = opt[1][index]
+                    args = []
             else:
                 print('That option isn\'t available right now.')
+                continue
         
         if command=='exit':
             if not args or not args[0] == 'nosave':
@@ -75,14 +79,14 @@ while True:
             arg = ' '.join(args)
             spell = sb.get_spell(arg)
             if spell:
-                cli.print_spell(spell)
+                opt = cli.print_spell(spell)
             else:
                 print('Sorry, I couldn\'t find that spell.')
         elif command in ['search', 's']:
             spells = sb.handle_query(' '.join(args))
             if spells:
                 if len(spells) == 1:
-                    cli.print_spell(spells[0])
+                    opt = cli.print_spell(spells[0])
                 else:
                     spell_names = [spell.name for spell in spells]
                     cli.print_list('Results', spell_names)
