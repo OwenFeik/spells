@@ -1,4 +1,5 @@
 import os # get_terminal_size
+import re
 import dataloaders
 import utilities
 
@@ -41,9 +42,16 @@ def print_spell(spell):
         duration = utilities.printable_paragraph('Duration: ' + spell.duration, width)
         out += f'\n{components}\n{duration}'
 
-    out += f'\n{utilities.printable_paragraph(spell.desc,width)}\n'
+    desc = spell.desc
+    rolls = re.findall(r'(?<!increases by )(\d+d\d+)', desc)
+    for i, roll in enumerate(rolls):
+        desc = desc.replace(roll, f'{roll} [{i + 1}]', 1)
+
+    out += f'\n{utilities.printable_paragraph(desc, width)}\n'
 
     print(out)
+
+    return 'roll', rolls # opt
 
 def print_prepped(char):
     out = ''

@@ -1514,7 +1514,7 @@
         "range": "120 feet",
         "components": "V, S",
         "duration": "Instantaneous",
-        "description": "A beam of crackling energy streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 force damage.\n\nAt higher levels: The spell creates more than one beam when you reach higher levels: \nTwo beams at 5th level\nThree beams at 11th level\nFour beams at 17th level. \nYou can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.",
+        "description": "A beam of crackling energy streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 force damage.\n\nAt higher levels: The spell creates more than one beam when you reach higher levels: \n\u2022 Two beams at 5th level\n\u2022 Three beams at 11th level\n\u2022 Four beams at 17th level. \nYou can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.",
         "ritual": false
     },
     {
