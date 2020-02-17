@@ -1,3 +1,6 @@
+import re
+import random
+
 class Tracker():
     def __init__(self, name, default = 0, quantity = None, reset_on_rest = False):
         self.name = name
@@ -24,11 +27,21 @@ class Tracker():
         elif command == '--':
             self.quantity -= 1
             return f'Decremented {self.name}. Current value: {self.quantity}'
+        elif command == 'default' and not args:
+            return f'Current default value of {self.name}: {self.default}.'
         elif not args:
             return f'If command {command} exists, it requires arguments.'
 
         if args[0].isnumeric():
             quantity = int(args[0])
+        elif re.match('^[0-9]*d[0-9]+$', args[0]):
+            quantity = 0
+            
+            qty, die = args[0].split('d')
+            qty = 1 if qty == '' else int(qty)
+            die = int(die)
+            for _ in range(int(qty)):
+                quantity += random.randint(0, die)
 
         if command in ['add', 'give', '+', '+=']:
             self.quantity += quantity
@@ -40,6 +53,10 @@ class Tracker():
             self.quantity = quantity 
             return f'Set {self.name} to {self.quantity}.'
         elif command == 'default':
+            # Allow for t default = 3 as well as t default 3.
+            if args[0] == '=' and args[1].isnumeric():
+                quantity = int(args[1])
+
             self.default = quantity
             return f'Set default of {self.name} to {self.default}.'
         else:
@@ -52,7 +69,8 @@ class Tracker():
         return {
             'name': self.name,
             'quantity': self.quantity,
-            'default': self.default
+            'default': self.default,
+            'reset_on_rest': self.reset_on_rest
         }
 
     @staticmethod
