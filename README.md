@@ -2,11 +2,19 @@
 
 ## Intro
 
-Spells is a command line utility for the management of DnD characters, under development. It is primarily targeted at allowing users to quickly and easily browse a library of spell descriptions, as well as keeping track of assorted values such as spells slots or hit points.
+Spells is a python 3 command line utility for the management of DnD characters, under development. It is primarily targeted at allowing users to quickly and easily browse a library of spell descriptions, as well as keeping track of assorted values such as spells slots or hit points. It aims to be easy to learn and quick to use.
 
-## Quick Start
+### Install
 
-### Resources:
+```
+git clone https://github.com/OwenFeik/spells.git
+cd spells
+python3 spells.py
+```
+
+## Usage
+
+### Resources
 
 The resources folder ("./resources/") should contain "spells.json": a JSON file containing a list of spells of the following format.
 
@@ -45,6 +53,8 @@ Arguments for ```search``` should be formatted like so: ```n: Fireball co: "bat 
 
 As well as ```rit``` or ```ritual``` , which operates slightly differently in that no argument need be supplied, instead by inclusion of the search term, only spells which are rituals will be returned.
 
+When using these functions, as well as some others, you may see lists or footnotes with numbers encased in square brackets like so: ```[1]``` . These indicate "options"; until you use another command which generates options, you can use the options from this command by entering the corresponding number. This includes things like selecting search results, or performing dice rolls prescribed by spells.
+
 ### Creating and Using a Character
 
 Create a character using the ```char``` (or ```ch```) command, which will launch a simple wizard for you to create a character. This character can then be used for a variety of purposes, such as for keeping track of spells and other values.
@@ -71,12 +81,13 @@ Start a tracker using ```t <name>``` or ```t <name> = <default value>``` and you
 * ```rest``` : Toggle whether this tracker should be reset on a long rest (False by default).
 * ```++``` : Increment the tracker by 1.
 * ```--``` : Decrement the tracker by 1.
+* ```default``` : With no argument, prints the current default.
 
 These commands all require an argument of ```<value>``` , the quantity applied to the tracker.
 
 * ```<add or give or + or +=> <value>``` : Increase the trackers value by ```<value>``` .
 * ```<subtract or take or - or -=> <value>``` : Reduce the trackers value by ```<value>``` .
-* ```<set or => <value>```: Set the tracker to ```<value>``` .
+* ```<set or => <value>``` : Set the tracker to ```<value>``` .
 * ```default <value>``` : Set the trackers default to ```<value>``` .
 
 You can delete a tracker with ```deltracker <name>``` or ```dt <name>``` .
