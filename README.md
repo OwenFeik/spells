@@ -83,7 +83,7 @@ Start a tracker using ```t <name>``` or ```t <name> = <default value>``` and you
 * ```--``` : Decrement the tracker by 1.
 * ```default``` : With no argument, prints the current default.
 
-These commands all require an argument of ```<value>``` , the quantity applied to the tracker.
+These commands all require an argument of ```<value>``` , the quantity applied to the tracker. ```<value>``` can be either an integer or a dice roll formatted like ```1d8``` or ```2d10``` . If a dice roll is supplied, the value will be rolled and then applied.
 
 * ```<add or give or + or +=> <value>``` : Increase the trackers value by ```<value>``` .
 * ```<subtract or take or - or -=> <value>``` : Reduce the trackers value by ```<value>``` .
