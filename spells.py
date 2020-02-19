@@ -121,7 +121,7 @@ while True:
 
             if args and args[0] in constants.commands:
                 print(f'Name {args[0]} is a command and thus reserved.')
-            elif args[0] in c.trackers:
+            elif args and args[0] in c.trackers:
                 if len(args) > 1:
                     print(c.trackers[args[0]].handle_command(args[1:])) # Returns a string describing the operation undertaken
                 else:
