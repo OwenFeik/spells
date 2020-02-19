@@ -43,7 +43,12 @@ def print_spell(spell):
         out += f'\n{components}\n{duration}'
 
     desc = spell.desc
-    rolls = re.findall(r'(?<!increases by )(\d+d\d+)', desc)
+    temp_rolls = re.findall(r'(?<!increases by )(\d+d\d+)', desc)
+    rolls = []
+    for roll in temp_rolls:
+        if roll not in rolls:
+            rolls.append(roll)
+    
     for i, roll in enumerate(rolls):
         desc = desc.replace(roll, f'{roll} [{i + 1}]', 1)
 
