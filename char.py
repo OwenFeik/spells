@@ -17,7 +17,7 @@ class Char():
         self.trackers = kwargs.get('trackers', {})
     
     def __str__(self):
-        klasse_string = ' '.join([f'{utilities.capitalise(k["name"])} {k["level"]}' for k in self.klasses])
+        klasse_string = ', '.join([f'{utilities.capitalise(k["name"])} {k["level"]}' for k in self.klasses])
         return f'{utilities.capitalise(self.name)} | {klasse_string}'
 
     @property
@@ -111,7 +111,7 @@ class Char():
     @staticmethod
     def from_json(data):
         if 'trackers' in data:
-            data['trackers'] = {t['name']: tracker.Tracker(t['name'], t['default'], t['quantity']) for t in data['trackers']}
+            data['trackers'] = {t['name']: tracker.Tracker(t['name'], t['default'], t['quantity'], t['reset_on_rest']) for t in data['trackers']}
         return Char(**data)
 
     @staticmethod

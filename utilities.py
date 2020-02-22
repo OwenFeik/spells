@@ -115,7 +115,7 @@ def parse_spell_query(string):
     criteria = ''
     for c in string:
         if c == ' ':
-            if not quote:
+            if not quote and criteria:
                 colon = False
 
                 if query and criteria:
@@ -129,8 +129,6 @@ def parse_spell_query(string):
                 criteria = ''
             elif colon and quote:
                 criteria += c
-            else:
-                raise ValueError
         elif c == '"':
             if colon:
                 quote = not quote
