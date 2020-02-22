@@ -69,12 +69,13 @@ def print_prepped(char):
 
     for i in range(0, 10):
         if spells[i]:
-            out += f'\n\n{utilities.level_prefix(i)}:'
+            out += f'\n{utilities.level_prefix(i)}:'
             for spell in spells[i]:
                 opt.append(spell)
                 out += f'\n\t[{len(opt)}] {spell}'
+            out += '\n'
 
-    print(out + '\n')
+    print(out)
     return ('spell', opt)
 
 def print_chars():
