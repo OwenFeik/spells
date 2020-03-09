@@ -194,7 +194,10 @@ def rename(context):
     else:
         old_name = context.character.name
         context.character.name = context.arg_text
-        print(f'Renamed {utilities.capitalise(old_name)} to {utilities.capitalise(context.arg_text)}.') 
+        print(f'Renamed {utilities.capitalise(old_name)} to {utilities.capitalise(context.arg_text)}.')
+
+        if dataloaders.save_exists(old_name) and cli.get_decision(f'Delete old save file for {utilities.capitalise(old_name)}?'):
+            dataloaders.delete_character(old_name)
 
 def rest(context):
     if context.character_check():

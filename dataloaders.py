@@ -36,6 +36,10 @@ def current_chars():
                 chars.append(json.load(f))
     return chars
 
+def save_exists(name):
+    names = [c['name'] for c in current_chars()]
+    return name.lower() in names
+
 def get_cache():
     try:
         with open('resources/cache.json', 'r') as f:
