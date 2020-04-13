@@ -122,11 +122,10 @@ def parse_spell_query(string):
                     if query in query_shortenings:
                         query = query_shortenings[query]
                     queries[query.lower()] = criteria.lower()
-                elif query in ['rit', 'ritual']:
-                    queries['ritual'] = 'true'
-                
                 query = ''
                 criteria = ''
+            elif query in ['rit', 'ritual']:
+                queries['ritual'] = 'true'
             elif colon and quote:
                 criteria += c
         elif c == '"':
