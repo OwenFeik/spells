@@ -78,3 +78,8 @@ commands = [
     'levelup',
     'level'
 ]
+
+default_config = {
+    'print_spell_classes': True,
+    'load_previous_char': True
+}

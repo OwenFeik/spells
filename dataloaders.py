@@ -61,3 +61,14 @@ def save_cache(c = None):
 def clear_cache():
     if os.path.exists('resources/cache.json'):
         os.remove('resources/cache.json')
+
+def get_config():
+    try:
+        with open('resources/config.json', 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return constants.default_config
+
+def save_config(config):
+    with open('resources/config.json', 'w') as f:
+        json.dump(config, f, indent = 4)

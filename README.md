@@ -125,3 +125,4 @@ Rolls: 5, 5, 5, 6, 4, 6, 6, 6   Total: 43 (+9)
 ### Other
 
 * ```clear``` or ```cls``` will clear the screen.
+* ```settings``` will allow you to change some behaviours.
