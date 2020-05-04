@@ -6,8 +6,9 @@ import commands
 import re
 
 class Context():
-    def __init__(self, spellbook, character = None):
+    def __init__(self, spellbook, config, character = None):
         self.spellbook = spellbook
+        self.config = config
         self.character = character
         self.raw_text = ''
         self.arg_text = ''
@@ -54,6 +55,7 @@ class Context():
             dataloaders.save_cache(self.character)
         else:
             dataloaders.save_cache()
+        dataloaders.save_config(self.config)
 
     def update_options(self, option_tuple):
         self.option_mode, self.options = option_tuple
@@ -83,6 +85,10 @@ class Context():
                         self.get_input(string = f'char {option}')
                     elif self.option_mode == 'roll':
                         self.get_input(string = option)
+                    elif self.option_mode == 'setting':
+                        self.config[option] = not self.config[option]
+                        print(f'Toggled {option} to {self.config[option]}.')
+                        return
                 else:
                     print('That option isn\'t available right now.')
                     return

@@ -14,9 +14,10 @@ except FileNotFoundError:
     sb = None
 
 cache = dataloaders.get_cache()
+cfg = dataloaders.get_config()
 c = None # Current player character
 
-if cache['character']:
+if cfg['load_previous_char'] and cache['character']:
     try:
         data = dataloaders.load_character(cache['character'])
         data.update({'sb': sb})
@@ -25,7 +26,7 @@ if cache['character']:
     except FileNotFoundError:
         pass
 
-context = context.Context(sb, c)
+context = context.Context(sb, cfg, c)
 
 while True:
     context.get_input()

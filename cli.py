@@ -3,7 +3,7 @@ import re
 import dataloaders
 import utilities
 
-def print_spell(spell):
+def print_spell(spell, print_classes = True):
     width = os.get_terminal_size()[0]
     if width < 60:
         pass
@@ -54,6 +54,20 @@ def print_spell(spell):
 
     out += f'\n{utilities.printable_paragraph(desc, width)}\n'
 
+    if print_classes:
+        classes = ', '.join(spell.classes)
+        subclasses = ', '.join(spell.subclasses)
+        
+        if classes or subclasses:
+            class_str = f'Classes with {spell.name}: '
+            if classes:
+                class_str += classes
+                if subclasses:
+                    class_str += ', '
+            if subclasses:
+                class_str += subclasses
+        out += f'\n{utilities.printable_paragraph(class_str, width)}\n'
+
     print(out)
 
     return 'roll', rolls # opt
@@ -96,13 +110,14 @@ def print_chars():
     else:
         print('No characters saved.')
 
-def print_list(title, items):
+def print_list(title, items, afterword = ''):
     print(f'\n{title}:\n')
     
-    count = 0
-    for item in items:
-        count += 1
-        print(f'\t[{count}] {item}')
+    for i, item in enumerate(items):
+        print(f'\t[{i + 1}] {item}')
+
+    if afterword:
+        print(f'\n{afterword}')
     print()
 
 def get_input(prompt):

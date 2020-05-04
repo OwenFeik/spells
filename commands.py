@@ -21,7 +21,8 @@ def save(context):
 def info(context):
     spell = context.spellbook.get_spell(context.arg_text)
     if spell:
-        context.update_options(cli.print_spell(spell))
+        opt = cli.print_spell(spell, context.config['print_spell_classes'])
+        context.update_options(opt)
     else:
         print('Sorry, I couldn\'t find that spell.')
 
@@ -34,7 +35,8 @@ def search(context):
     
     if spells:
         if len(spells) == 1:
-            context.update_options(cli.print_spell(spells[0]))
+            opt = cli.print_spell(spells[0], context.config['print_spell_classes'])
+            context.update_options(opt)
         else:
             spell_names = [spell.name for spell in spells]
             cli.print_list('Results', spell_names)
@@ -219,6 +221,12 @@ def level_up(context):
     else:
         context.character.level_up()
 
+def settings(context):
+    options = [setting for setting in context.config]
+    state_list = [f'{opt}: {context.config[opt]}' for opt in options]
+    cli.print_list('Settings', state_list, 'Select an option to toggle that setting.')
+    context.update_options(('setting', options))
+
 mapping = {
     'exit': exit_app,
     'save': save,
@@ -254,5 +262,6 @@ mapping = {
     'rename': rename,
     'rest': rest,
     'levelup': level_up,
-    'level': level_up
+    'level': level_up,
+    'settings': settings
 }
