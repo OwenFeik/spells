@@ -106,7 +106,13 @@ def parse_spell_query(string):
         'd': 'duration',
         't': 'desc',
         'rit': 'ritual',
-        'range': 'rnge'
+        'range': 'rnge',
+        'class': 'classes',
+        'cls': 'classes',
+        'cl': 'classes',
+        'subclass': 'subclasses',
+        'scls': 'subclasses',
+        'sc': 'subclasses'
     }
 
     quote = False
@@ -132,7 +138,7 @@ def parse_spell_query(string):
             if colon:
                 quote = not quote
             else:
-                raise ValueError
+                raise ValueError('Format: "search <attribute>:<criteria>".')
         elif c == ':' and not quote:
             colon = True
         else:
