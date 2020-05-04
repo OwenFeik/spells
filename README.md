@@ -28,7 +28,10 @@ The resources folder ("./resources/") should contain "spells.json": a JSON file 
         "components": "V S M: A tiny ball of bat guano and sulfur",
         "duration": "Instantaneous",
         "description": "Boom.",
-        "ritual": false
+        "ritual": false,
+        "classes": [ "Wizard" ],
+        "subclasses": [ "Druid (Circle of Elements (Fire))" ],
+        "alt_names": [ "big boom", "'splosion" ]
     }
 ```
 
@@ -50,6 +53,8 @@ Arguments for ```search``` should be formatted like so: ```n: Fireball co: "bat 
 * ```co``` or ```components``` , components of the spell.
 * ```d``` or ```duration``` , the spell's duration.
 * ```t``` or ```desc``` , the description text.
+* ```cl``` or ```classes``` , classes which have access to the spell.
+* ```sc``` or ```subclasses```, subclasses which have access to the spell.
 
 As well as ```rit``` or ```ritual``` , which operates slightly differently in that no argument need be supplied, instead by inclusion of the search term, only spells which are rituals will be returned.
 

@@ -8,9 +8,18 @@ class Spellbook():
             
     def build_spellbook(self):
         try:
-            self.spells=[Spell.from_json(spell) for spell in dataloaders.get_spells()]
-            self.names=[spell.name for spell in self.spells]
-            self._names=[name.lower() for name in self.names] # Used to match queries through difflib
+            self.spells = {spell['name']: Spell.from_json(spell) \
+                for spell in dataloaders.get_spells()}
+
+            alt_names = {}
+            for spell in self.spells.values():
+                if spell.alt_names:
+                    for name in spell.alt_names:
+                        alt_names[name] = spell
+            self.spells.update(alt_names)
+
+            self.names = list(self.spells.keys())
+            self._names = [name.lower() for name in self.names] # Used to match queries through difflib
         except:
             raise ValueError
 
@@ -18,47 +27,50 @@ class Spellbook():
         queries = utilities.parse_spell_query(query)
 
         results = []
-        for spell in self.spells:
+        for spell in self.spells.values():
             for q in queries:
-                if not queries[q] in str(getattr(spell, q)).lower():
-                    break
+                try:
+                    if not queries[q] in str(getattr(spell, q)).lower():
+                        break
+                except AttributeError:
+                    raise ValueError(f'Invalid query term: {q}.')
             else:
                 results.append(spell)
         
         return results
 
     def get_spell(self,query):
-        target=difflib.get_close_matches(query.lower(),self._names,1)
+        target = difflib.get_close_matches(query.lower(), self._names, 1)
         if target:
-            target=self.names[self._names.index(target[0])] # Get the actual name of the spell
+            return self.spells[self.names[self._names.index(target[0])]]
         else:
             return None
 
-        for spell in self.spells:
-            if spell.name==target:
-                return spell
-        return None
-
     def get_spells(self,queries):
-        spells=[]
+        spells = []
         for spell in queries:
             spells.append(self.get_spell(spell))
         return spells
 
 class Spell():
-    def __init__(self, name, school, level, cast, rnge, components, duration, desc, ritual):
-        self.name = name
-        self.school = school
-        self.level = level
-        self.cast = cast
-        self.rnge = rnge
-        self.components = components
-        self.duration = duration
-        self.desc = desc
-        self.ritual = ritual
+    def __init__(self, **kwargs):
+        self.name = kwargs.get('name', 'N/A')
+        self.school = kwargs.get('school', 'N/A')
+        self.level = kwargs.get('level', -1)
+        self.cast = kwargs.get('cast', 'N/A')
+        self.rnge = kwargs.get('range', 'N/A')
+        self.components = kwargs.get('components', 'N/A')
+        self.duration = kwargs.get('duration', 'N/A')
+        self.desc = kwargs.get('description', 'N/A')
+        self.ritual = kwargs.get('ritual', False)
+        self.classes = kwargs.get('classes', [])
+        self.subclasses = kwargs.get('subclasses', [])
+        self.alt_names = kwargs.get('alt_names', [])
 
     def __str__(self):
-        return f'\n{self.name} | {self.school}\n{self.cast} | {self.rnge}{" | Ritual" if self.ritual else ""}\n{self.components} | {self.duration}\n\n{self.desc}\n'
+        return f'\n{self.name} | {self.school}\
+            \n{self.cast} | {self.rnge}{" | Ritual" if self.ritual else ""}\n\
+            {self.components} | {self.duration}\n\n{self.desc}\n'
 
     def to_json(self):
         return {
@@ -70,19 +82,12 @@ class Spell():
             'components': self.components,
             'duration': self.duration,
             'description': self.desc,
-            'ritual': self.ritual
+            'ritual': self.ritual,
+            'classes': self.classes,
+            'subclasses': self.subclasses,
+            'alt_names': self.alt_names
         }
 
     @staticmethod
     def from_json(data):
-        name = data.get('name', 'N/A')
-        school = data.get('school', 'N/A')
-        level = data.get('level', -1)
-        cast = data.get('cast', 'N/A')
-        rnge = data.get('range', 'N/A')
-        components = data.get('components', 'N/A')
-        duration = data.get('duration', 'N/A')
-        desc = data.get('description', 'N/A')
-        ritual = data.get('ritual', False)
-        
-        return Spell(name, school, level, cast, rnge, components, duration, desc, ritual)
+        return Spell(**data)

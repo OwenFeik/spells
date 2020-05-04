@@ -28,8 +28,8 @@ def info(context):
 def search(context):
     try:
         spells = context.spellbook.handle_query(context.arg_text)
-    except ValueError:
-        print('Invalid search. Format: "s <query>:<criteria>".')
+    except ValueError as e:
+        print(f'Invalid search. {e}')
         return
     
     if spells:
