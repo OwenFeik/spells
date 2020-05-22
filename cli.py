@@ -66,7 +66,7 @@ def print_spell(spell, print_classes = True):
                     class_str += ', '
             if subclasses:
                 class_str += subclasses
-        out += f'\n{utilities.printable_paragraph(class_str, width)}\n'
+            out += f'\n{utilities.printable_paragraph(class_str, width)}\n'
 
     print(out)
 
