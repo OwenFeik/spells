@@ -1,7 +1,7 @@
-import spellbook
+import char
 import context
 import dataloaders
-import char
+import spellbook
 
 try:
     try:

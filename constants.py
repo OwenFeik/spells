@@ -81,5 +81,6 @@ commands = [
 
 default_config = {
     'print_spell_classes': True,
-    'load_previous_char': True
+    'load_previous_char': True,
+    'use_full_width': False
 }
