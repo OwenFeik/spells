@@ -10,6 +10,7 @@ class Context():
         self.spellbook = spellbook
         self.config = config
         self.character = character
+        self.save_file = ''
         self.raw_text = ''
         self.arg_text = ''
         self.command = ''
@@ -51,14 +52,16 @@ class Context():
 
     def save(self):
         if self.character:
-            dataloaders.save_character(self.character)
+            dataloaders.save_character(self.character, self.save_file)
             dataloaders.save_cache(self.character)
         else:
             dataloaders.save_cache()
         dataloaders.save_config(self.config)
 
     def update_options(self, option_tuple):
-        self.option_mode, self.options = option_tuple
+        option_mode, options = option_tuple
+        if options:
+            self.option_mode, self.options = option_mode, options
 
     def update_roll(self, roll_tuple):
         self.previous_roll, self.previous_roll_die = roll_tuple

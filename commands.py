@@ -21,7 +21,11 @@ def save(context):
 def info(context):
     spell = context.spellbook.get_spell(context.arg_text)
     if spell:
-        opt = cli.print_spell(spell, context.config['print_spell_classes'])
+        opt = cli.print_spell(
+            spell, 
+            cli.get_width(context.config['use_full_width']),
+            context.config['print_spell_classes']
+        )
         context.update_options(opt)
     else:
         print('Sorry, I couldn\'t find that spell.')
@@ -35,7 +39,12 @@ def search(context):
     
     if spells:
         if len(spells) == 1:
-            opt = cli.print_spell(spells[0], context.config['print_spell_classes'])
+            opt = cli.print_spell(
+                spells[0], 
+                cli.get_width(context.config['use_full_width']),
+                context.config['print_spell_classes']
+            )
+
             context.update_options(opt)
         else:
             spell_names = [spell.name for spell in spells]
@@ -227,6 +236,20 @@ def settings(context):
     cli.print_list('Settings', state_list, 'Select an option to toggle that setting.')
     context.update_options(('setting', options))
 
+def load(context):
+    data = dataloaders.load_character_from_path(context.raw_text)
+    if not data:
+        print(f'Failed to load path "{context.raw_text}".')
+        return
+
+    if context.character_check() and cli.get_decision(f'Current character: {context.character.name}. Save this character?'):
+        context.save()
+
+    context.save_file = context.raw_text
+    data['sb'] = context.spellbook
+    context.character = char.Char.from_json(data)
+    print(f'Character loaded: {str(context.character)}.')
+
 mapping = {
     'exit': exit_app,
     'save': save,
@@ -263,5 +286,6 @@ mapping = {
     'rest': rest,
     'levelup': level_up,
     'level': level_up,
-    'settings': settings
+    'settings': settings,
+    'load': load
 }

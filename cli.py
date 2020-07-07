@@ -3,14 +3,9 @@ import re
 import dataloaders
 import utilities
 
-def print_spell(spell, print_classes = True):
-    width = os.get_terminal_size()[0]
-    if width < 60:
-        pass
-    elif width < 120:
-        width = int(0.8 * width)
-    else:
-        width = int(0.6 * width)
+def print_spell(spell, width = None, print_classes = True):
+    if width is None:
+        width = get_width()
 
     out = ''
 
@@ -71,6 +66,17 @@ def print_spell(spell, print_classes = True):
     print(out)
 
     return 'roll', rolls # opt
+
+def get_width(use_full_width = False):
+    width = os.get_terminal_size()[0]
+    if not use_full_width:
+        if width < 60:
+            pass
+        elif width < 120:
+            width = int(0.8 * width)
+        else:
+            width = int(0.6 * width)
+    return width
 
 def print_prepped(char):
     out = ''
