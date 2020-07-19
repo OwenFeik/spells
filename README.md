@@ -66,7 +66,7 @@ Create a character using the ```char``` (or ```ch```) command, which will launch
 
 The current character can be saved using the ```save``` command, and is automatically saved when the ```exit``` command is used (this can be avoided through the use of ```exit nosave``` if desired). When the app is started, it will open the character that was in use when it was closed, if possible.
 
-A character can be loaded through ```ch <name>``` and a list of saved characters can be viewed through ```chars``` . These saved characters can be deleted through the use of the ```delchar``` command: ```delchar <name>``` will delete the saved character "name".
+A character can be loaded through ```ch <name>``` and a list of saved characters can be viewed through ```chars``` . These saved characters can be deleted through the use of the ```delchar``` command: ```delchar <name>``` will delete the saved character "name". A save file located outside of the saves folder can be loaded through the use of ```load <file>``` command.
 
 A new character can be started with ```newchar``` , which will replace the current character <b>without saving</b>.
 Once one has a character, the following commands are available, in addition to the ability to track spell use and use trackers:
