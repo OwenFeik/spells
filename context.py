@@ -27,7 +27,8 @@ class Context():
             else:
                 self.raw_text = input(f'{message}> ')
             self.arg_text = self.raw_text.strip().replace(',', '')
-            self.command, *self.args = [arg for arg in self.arg_text.split(' ') if arg != '']
+            self.command, *self.args = \
+                [arg for arg in self.arg_text.split(' ') if arg != '']
             self.raw_text = self.raw_text.replace(self.command, '', 1).strip()
             self.arg_text = self.arg_text.replace(self.command, '', 1).strip()
         
@@ -52,13 +53,19 @@ class Context():
 
     def save(self):
         if self.character:
-            dataloaders.save_character(self.character, self.save_file)
-            dataloaders.save_cache(self.character)
+            self.save_file = dataloaders.save_character(
+                self.character, 
+                self.save_file
+            )
+            dataloaders.save_cache(self.save_file)
         else:
             dataloaders.save_cache()
         dataloaders.save_config(self.config)
 
     def update_options(self, option_tuple):
+        if option_tuple is None:
+            return
+
         option_mode, options = option_tuple
         if options:
             self.option_mode, self.options = option_mode, options
@@ -67,9 +74,13 @@ class Context():
         self.previous_roll, self.previous_roll_die = roll_tuple
 
     def character_check(self, new_char = False):
-        if not self.character and new_char and cli.get_decision('No current character, which is required for this action. Create a temporary character?'):
+        if not self.character and new_char and cli.get_decision( \
+            'No current character, which is required for this action. ' + \
+            ' Create a temporary character?'):
+
             self.character = char.Char()
-            print('Rename your character with "rename <name>" and add levels with "levelup".')              
+            print('Rename your character with "rename <name>" and add ' + \
+                'levels with "levelup".')              
 
         return True if self.character else False
 
@@ -100,7 +111,8 @@ class Context():
                 commands.mapping[self.command](self)
             elif self.character and self.command in self.character.trackers:
                 if self.args:
-                    print(self.character.trackers[self.command].handle_command(self.args))
+                    t = self.character.trackers[self.command]
+                    print(t.handle_command(self.args))
                 else:
                     print(self.character.trackers[self.command])
             elif re.match(r'^[0-9]*d[0-9]+$', self.command):
@@ -108,7 +120,8 @@ class Context():
             else:
                 suggestion = utilities.suggest_command(self.command)
                 if suggestion:
-                    print(f'Unknown command: {self.command}. Perhaps you meant "{suggestion}".')
+                    print(f'Unknown command: {self.command}. ' + \
+                        f'Perhaps you meant "{suggestion}".')
                 else:
                     print(f'Unknown command: {self.command}.')
         except Exception as e:

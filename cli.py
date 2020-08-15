@@ -3,7 +3,7 @@ import re
 import dataloaders
 import utilities
 
-def print_spell(spell, width = None, print_classes = True):
+def print_spell(spell, width = None, print_classes = True, options = True):
     if width is None:
         width = get_width()
 
@@ -38,14 +38,15 @@ def print_spell(spell, width = None, print_classes = True):
         out += f'\n{components}\n{duration}'
 
     desc = spell.desc
-    temp_rolls = re.findall(r'(?<!increases by )(\d+d\d+)', desc)
-    rolls = []
-    for roll in temp_rolls:
-        if roll not in rolls:
-            rolls.append(roll)
-    
-    for i, roll in enumerate(rolls):
-        desc = desc.replace(roll, f'{roll} [{i + 1}]', 1)
+    if options:
+        temp_rolls = re.findall(r'(?<!increases by )(\d+d\d+)', desc)
+        rolls = []
+        for roll in temp_rolls:
+            if roll not in rolls:
+                rolls.append(roll)
+        
+        for i, roll in enumerate(rolls):
+            desc = desc.replace(roll, f'{roll} [{i + 1}]', 1)
 
     out += f'\n{utilities.printable_paragraph(desc, width)}\n'
 
@@ -65,7 +66,8 @@ def print_spell(spell, width = None, print_classes = True):
 
     print(out)
 
-    return 'roll', rolls # opt
+    if options:
+        return 'roll', rolls # opt
 
 def get_width(use_full_width = False):
     width = os.get_terminal_size()[0]
@@ -117,7 +119,7 @@ def print_chars():
         print('No characters saved.')
 
 def print_list(title, items, afterword = ''):
-    print(f'\n{title}:\n')
+    print(f'\n{title}:')
     
     for i, item in enumerate(items):
         print(f'\t[{i + 1}] {item}')
