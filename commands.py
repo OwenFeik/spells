@@ -1,9 +1,11 @@
-import cli
-import utilities
-import dataloaders
-import tracker
+import os
+
 import char
+import cli
+import dataloaders
 import spellbook
+import tracker
+import utilities
 
 def exit_app(context):
     if context.get_arg(0) != 'nosave':
@@ -14,7 +16,8 @@ def exit_app(context):
 def save(context):
     if context.character:
         context.save()
-        print(f'Successfully saved {utilities.capitalise(context.character.name)}.')
+        print(f'Successfully saved ' + \
+            f'{utilities.capitalise(context.character.name)}.')
     else:
         print('No current character to save. Start one with "ch"!')
 
@@ -24,7 +27,8 @@ def info(context):
         opt = cli.print_spell(
             spell, 
             cli.get_width(context.config['use_full_width']),
-            context.config['print_spell_classes']
+            context.config['print_spell_classes'],
+            context.config['print_spell_rolls']
         )
         context.update_options(opt)
     else:
@@ -42,7 +46,8 @@ def search(context):
             opt = cli.print_spell(
                 spells[0], 
                 cli.get_width(context.config['use_full_width']),
-                context.config['print_spell_classes']
+                context.config['print_spell_classes'],
+                context.config['print_spell_rolls']
             )
 
             context.update_options(opt)
@@ -62,10 +67,15 @@ def reroll(context):
         if die.isnumeric() and int(die) <= len(context.previous_roll):
             rerolls.append(int(die))
         else:
-            print('Usage: "rr <dice> <to> <re> <roll>", where dice are identified by their index.')
+            print('Usage: "rr <dice> <to> <re> <roll>", where dice are ' + \
+                'identified by their index.')
             break
     else:
-        result = utilities.reroll(context.previous_roll, context.previous_roll_die, rerolls)
+        result = utilities.reroll(
+            context.previous_roll, 
+            context.previous_roll_die, 
+            rerolls
+        )
         context.update_roll(result)
 
 def characters(context):
@@ -88,12 +98,15 @@ def tracker_access(context):
         print(f'Numbers are used to select options and thus reserved.')
     elif name in context.character.trackers:
         if context.arg_count() > 1:
-            print(context.character.trackers[name].handle_command(context.args[1:]))
+            t = context.character.trackers[name]
+            print(t.handle_command(context.args[1:]))
         else:
             print(context.character.trackers[name])
     elif context.arg_count() == 1:
         context.character.trackers[name] = tracker.Tracker(name)
-    elif context.arg_count() == 3 and context.get_arg(1) == '=' and context.get_arg(2).isnumeric():
+    elif context.arg_count() == 3 and context.get_arg(1) == '=' and \
+        context.get_arg(2).isnumeric():
+        
         t = tracker.Tracker(name, default = int(context.get_arg(2)))
         context.character.trackers[name] = t
     else:
@@ -128,7 +141,9 @@ def character(context):
             print(f'Current character: {str(context.character)}.')
         return
 
-    if context.character_check() and cli.get_decision(f'Current character: {context.character.name}. Save this character?'): 
+    if context.character_check() and cli.get_decision('Current character: ' + \
+        f'{context.character.name}. Save this character?'):
+
         context.save()
 
     try:
@@ -141,7 +156,9 @@ def character(context):
 
 
 def newchar(context):
-    if context.character_check() and cli.get_decision(f'Current character: {context.character.name}. Save this character?'): 
+    if context.character_check() and cli.get_decision('Current character: ' + \
+        f'{context.character.name}. Save this character?'): 
+        
         context.save()
 
     context.character = char.Char.from_wizard()
@@ -205,9 +222,12 @@ def rename(context):
     else:
         old_name = context.character.name
         context.character.name = context.arg_text
-        print(f'Renamed {utilities.capitalise(old_name)} to {utilities.capitalise(context.arg_text)}.')
+        print(f'Renamed {utilities.capitalise(old_name)} to ' + \
+            f'{utilities.capitalise(context.arg_text)}.')
 
-        if dataloaders.save_exists(old_name) and cli.get_decision(f'Delete old save file for {utilities.capitalise(old_name)}?'):
+        if dataloaders.save_exists(old_name) and cli.get_decision('Delete ' + \
+            f'old save file for {utilities.capitalise(old_name)}?'):
+            
             dataloaders.delete_character(old_name)
 
 def rest(context):
@@ -233,19 +253,26 @@ def level_up(context):
 def settings(context):
     options = [setting for setting in context.config]
     state_list = [f'{opt}: {context.config[opt]}' for opt in options]
-    cli.print_list('Settings', state_list, 'Select an option to toggle that setting.')
+    cli.print_list(
+        'Settings', 
+        state_list, 
+        'Select an option to toggle that setting.'
+    )
     context.update_options(('setting', options))
 
 def load(context):
-    data = dataloaders.load_character_from_path(context.raw_text)
-    if not data:
+    try:
+        data = dataloaders.load_character_from_path(context.raw_text)
+    except FileNotFoundError:
         print(f'Failed to load path "{context.raw_text}".')
         return
 
-    if context.character_check() and cli.get_decision(f'Current character: {context.character.name}. Save this character?'):
+    if context.character_check() and cli.get_decision('Current character: ' + \
+        f'{context.character.name}. Save this character?'):
+
         context.save()
 
-    context.save_file = context.raw_text
+    context.save_file = os.path.abspath(context.raw_text)
     data['sb'] = context.spellbook
     context.character = char.Char.from_json(data)
     print(f'Character loaded: {str(context.character)}.')

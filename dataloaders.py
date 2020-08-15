@@ -8,7 +8,7 @@ def get_real_path(rel_path):
 
 def get_spellslots(level):
     return constants.spellslots[level]
-        
+
 def get_spells():
     with open(get_real_path('resources/spells.json'),'r') as f:
         return json.load(f)
@@ -27,6 +27,8 @@ def save_character(char, path = ''):
     with open(path,'w') as f:
         json.dump(char.to_json(), f, indent = 4)
 
+    return path
+
 def delete_character(char):
     char_file = get_real_path(f'saves/{char}.json')
     if os.path.exists(char_file):
@@ -39,7 +41,7 @@ def load_character_from_path(path):
     if os.path.exists(path):
         with open(path, 'r') as f:
             return json.load(f)
-    return None
+    raise FileNotFoundError
 
 def current_chars():
     saves = os.listdir(get_real_path('saves'))
@@ -63,14 +65,14 @@ def get_cache():
             'character': None
         }        
 
-def save_cache(c = None):
+def save_cache(path = None):
     resources_path = get_real_path('resources')
     if not os.path.exists(resources_path):
         os.mkdir(resources_path)
 
     with open(resources_path + '/cache.json', 'w') as f:
         json.dump({
-            'character': c.name.lower() if c else None
+            'character': path
         }, f)
 
 def clear_cache():
@@ -81,7 +83,14 @@ def clear_cache():
 def get_config():
     try:
         with open(get_real_path('resources/config.json'), 'r') as f:
-            return json.load(f)
+            cfg = json.load(f)
+
+        # If a setting is missing from the config, use the default
+        for setting in constants.default_config:
+            if setting not in cfg:
+                cfg[setting] = constants.default_config[setting]
+
+        return cfg
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         return constants.default_config
 
