@@ -35,7 +35,7 @@ class Char():
         print(out + '\n')
 
     def print_trackers(self):
-        print('\nTrackers:\n')
+        print('\nTrackers:')
         for t in self.trackers:
             print(f'\t{str(self.trackers[t])}')
         print()
