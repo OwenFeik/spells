@@ -5,30 +5,30 @@ import spellbook
 
 try:
     try:
-        sb = spellbook.Spellbook() # Utility for retrieving spell information
+        sb = spellbook.Spellbook()  # Utility for retrieving spell information
     except ValueError:
-        print('Spellbook file corrupted. No Spellbook available.')
+        print("Spellbook file corrupted. No Spellbook available.")
         sb = None
 except FileNotFoundError:
-    print('Warning: No Spellbook available.')
+    print("Warning: No Spellbook available.")
     sb = None
 
 cache = dataloaders.get_cache()
 cfg = dataloaders.get_config()
-c = None # Current player character
+c = None  # Current player character
 
-if cfg['load_previous_char'] and cache['character']:
+if cfg["load_previous_char"] and cache["character"]:
     try:
-        data = dataloaders.load_character_from_path(cache['character'])
-        data.update({'sb': sb})
+        data = dataloaders.load_character_from_path(cache["character"])
+        data.update({"sb": sb})
         c = char.Char.from_json(data)
-        print(f'Character loaded: {str(c)}.')
+        print(f"Character loaded: {str(c)}.")
     except FileNotFoundError:
         pass
 
 context = context.Context(sb, cfg, c)
 if c is not None:
-    context.save_file = cache['character']
+    context.save_file = cache["character"]
 
 while True:
     context.get_input()

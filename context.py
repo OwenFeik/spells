@@ -5,38 +5,40 @@ import char
 import commands
 import re
 
-class Context():
-    def __init__(self, spellbook, config, character = None):
+
+class Context:
+    def __init__(self, spellbook, config, character=None):
         self.spellbook = spellbook
         self.config = config
         self.character = character
-        self.save_file = ''
-        self.raw_text = ''
-        self.arg_text = ''
-        self.command = ''
+        self.save_file = ""
+        self.raw_text = ""
+        self.arg_text = ""
+        self.command = ""
         self.args = []
-        self.option_mode = ''
+        self.option_mode = ""
         self.options = []
         self.previous_roll = []
         self.previous_roll_die = None
 
-    def get_input(self, message = '', string = None):
+    def get_input(self, message="", string=None):
         try:
             if string:
                 self.raw_text = string
             else:
-                self.raw_text = input(f'{message}> ')
-            self.arg_text = self.raw_text.strip().replace(',', '')
-            self.command, *self.args = \
-                [arg for arg in self.arg_text.split(' ') if arg != '']
-            self.raw_text = self.raw_text.replace(self.command, '', 1).strip()
-            self.arg_text = self.arg_text.replace(self.command, '', 1).strip()
-        
+                self.raw_text = input(f"{message}> ")
+            self.arg_text = self.raw_text.strip().replace(",", "")
+            self.command, *self.args = [
+                arg for arg in self.arg_text.split(" ") if arg != ""
+            ]
+            self.raw_text = self.raw_text.replace(self.command, "", 1).strip()
+            self.arg_text = self.arg_text.replace(self.command, "", 1).strip()
+
         except Exception as e:
-            print(f'Ran into issue parsing input: {e}.')
-            self.raw_text = ''
-            self.arg_text = ''
-            self.command = ''
+            print(f"Ran into issue parsing input: {e}.")
+            self.raw_text = ""
+            self.arg_text = ""
+            self.command = ""
             self.args = []
 
     def get_arg(self, index):
@@ -54,8 +56,7 @@ class Context():
     def save(self):
         if self.character:
             self.save_file = dataloaders.save_character(
-                self.character, 
-                self.save_file
+                self.character, self.save_file
             )
             dataloaders.save_cache(self.save_file)
         else:
@@ -73,14 +74,21 @@ class Context():
     def update_roll(self, roll_tuple):
         self.previous_roll, self.previous_roll_die = roll_tuple
 
-    def character_check(self, new_char = False):
-        if not self.character and new_char and cli.get_decision( \
-            'No current character, which is required for this action. ' + \
-            ' Create a temporary character?'):
+    def character_check(self, new_char=False):
+        if (
+            not self.character
+            and new_char
+            and cli.get_decision(
+                "No current character, which is required for this action. "
+                + " Create a temporary character?"
+            )
+        ):
 
             self.character = char.Char()
-            print('Rename your character with "rename <name>" and add ' + \
-                'levels with "levelup".')              
+            print(
+                'Rename your character with "rename <name>" and add '
+                + 'levels with "levelup".'
+            )
 
         return True if self.character else False
 
@@ -93,18 +101,18 @@ class Context():
                 index = int(self.command) - 1
                 if self.options and index < len(self.options):
                     option = self.options[index]
-                    if self.option_mode == 'spell':
-                        self.get_input(string = f'info {option}')
-                    elif self.option_mode == 'char':
-                        self.get_input(string = f'char {option}')
-                    elif self.option_mode == 'roll':
-                        self.get_input(string = option)
-                    elif self.option_mode == 'setting':
+                    if self.option_mode == "spell":
+                        self.get_input(string=f"info {option}")
+                    elif self.option_mode == "char":
+                        self.get_input(string=f"char {option}")
+                    elif self.option_mode == "roll":
+                        self.get_input(string=option)
+                    elif self.option_mode == "setting":
                         self.config[option] = not self.config[option]
-                        print(f'Toggled {option} to {self.config[option]}.')
+                        print(f"Toggled {option} to {self.config[option]}.")
                         return
                 else:
-                    print('That option isn\'t available right now.')
+                    print("That option isn't available right now.")
                     return
 
             if self.command in commands.mapping:
@@ -115,14 +123,16 @@ class Context():
                     print(t.handle_command(self.args))
                 else:
                     print(self.character.trackers[self.command])
-            elif re.match(r'^[0-9]*d[0-9]+$', self.command):
+            elif re.match(r"^[0-9]*d[0-9]+$", self.command):
                 self.update_roll(utilities.parse_roll(self.command))
             else:
                 suggestion = utilities.suggest_command(self.command)
                 if suggestion:
-                    print(f'Unknown command: {self.command}. ' + \
-                        f'Perhaps you meant "{suggestion}".')
+                    print(
+                        f"Unknown command: {self.command}. "
+                        + f'Perhaps you meant "{suggestion}".'
+                    )
                 else:
-                    print(f'Unknown command: {self.command}.')
+                    print(f"Unknown command: {self.command}.")
         except Exception as e:
-            print(f'Ran into issue executing command: {e}.')
+            print(f"Ran into issue executing command: {e}.")
