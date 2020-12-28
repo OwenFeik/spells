@@ -1,5 +1,7 @@
 import os
 
+import roll
+
 import char
 import cli
 import dataloaders
@@ -65,26 +67,25 @@ def search(context):
         print("Couldn't find any spells matching that description.")
 
 
-def roll(context):
-    context.update_roll(utilities.parse_roll(context.get_arg(0)))
+def roll_dice(context):
+    rolls = roll.get_rolls(context.arg_text)
+    if rolls:
+        print(roll.rolls_string(rolls))
+        context.update_roll(rolls[-1])
+    else:
+        print('Usage: "roll d20a + 6"')
 
 
 def reroll(context):
-    rerolls = []
-    for die in context.args:
-        if die.isnumeric() and int(die) <= len(context.previous_roll):
-            rerolls.append(int(die))
-        else:
-            print(
-                'Usage: "rr <dice> <to> <re> <roll>", where dice are '
-                + "identified by their index."
-            )
-            break
+    n = context.get_arg(0)
+    if n.isnumeric():
+        old_total = context.previous_roll.total
+        context.previous_roll.reroll(int(n))
+        delta = context.previous_roll.total - old_total
+        delta_string = ("+" if delta > 0 else "") + str(delta)
+        print(str(context.previous_roll) + f" ({delta_string})")
     else:
-        result = utilities.reroll(
-            context.previous_roll, context.previous_roll_die, rerolls
-        )
-        context.update_roll(result)
+        print('Usage: "reroll <number of dice>"')
 
 
 def characters(context):
@@ -294,10 +295,12 @@ def settings(context):
 
 
 def load(context):
+    path = context.raw_text.replace("load", "", 1).strip()
+
     try:
-        data = dataloaders.load_character_from_path(context.raw_text)
+        data = dataloaders.load_character_from_path(path)
     except FileNotFoundError:
-        print(f'Failed to load path "{context.raw_text}".')
+        print(f'Failed to load path "{path}".')
         return
 
     if context.character_check() and cli.get_decision(
@@ -307,7 +310,7 @@ def load(context):
 
         context.save()
 
-    context.save_file = os.path.abspath(context.raw_text)
+    context.save_file = os.path.abspath(path)
     data["sb"] = context.spellbook
     context.character = char.Char.from_json(data)
     print(f"Character loaded: {str(context.character)}.")
@@ -320,7 +323,7 @@ mapping = {
     "i": info,
     "search": search,
     "s": search,
-    "roll": roll,
+    "roll": roll_dice,
     "reroll": reroll,
     "rr": reroll,
     "characters": characters,

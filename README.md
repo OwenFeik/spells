@@ -160,12 +160,48 @@ command). Your characters currently available spell slots can be viewed with
 
 ### Rolling Dice
 
-Dice can be rolled following the pattern of ```<n>d<size>``` like this,
-optionally prefaced by ```roll``` : 
+Dice can be rolled following the pattern of ```<n>d<size>```, optionally
+prefaced by ```roll```. If the first term in your roll is an integer, it will be
+necessary to prefix as it will be assumed you are attempting to accesss an
+option.
 * ```roll 8d6``` : roll 8d6
 * ```d20``` : roll 1d20
 
-If n is omitted, a value of 1 is assumed. 
+If n is omitted, a value of 1 is assumed. A variety of more advanced syntax
+options for rolling are available. The specification followed is:
+```
+<const> <operation> <n>d<size><advstr> <mods> k<keep>
+```
+Where
+
+* ```const``` is an integer
+* ```operation``` is the arithmetic operation used to apply ```const``` to the
+result of the roll
+* ```n``` is the number of dice to roll
+* ```size``` is the number of faces on these dice
+* ```advstr``` is any number of "a"s and "d"s to determine whether the roll is
+at advantage or disadvantage.
+* ```mods``` is any number of terms of the form ```<operation> <value>``` e.g.
+```+ 3``` or ```* 2```
+* ```keep``` is the number of die to add to form the result e.g. ```k3``` to
+return the sum of the two highest rolls as the result.
+
+Some examples:
+
+```
+> roll 6 4d6k3
+4d6 keep 3      Rolls: 2, 6, 4, 2       Total: 12
+4d6 keep 3      Rolls: 4, 3, 2, 3       Total: 10
+4d6 keep 3      Rolls: 4, 1, 5, 3       Total: 12
+4d6 keep 3      Rolls: 5, 6, 2, 4       Total: 15
+4d6 keep 3      Rolls: 3, 2, 5, 6       Total: 14
+4d6 keep 3      Rolls: 1, 1, 1, 6       Total: 8
+Grand Total: 71
+> d20a + 3
+d20a + 3        Rolls: 16, 4    Total: 19
+> roll 2 * 2d10
+2d10 * 2        Rolls: 5, 5     Total: 20
+```
 
 Once you've rolled dice, you can use the ```reroll``` (or ```rr```) command to
 reroll them, such as for the Sorcerer "Empowered Spell" feature.
@@ -173,9 +209,11 @@ reroll them, such as for the Sorcerer "Empowered Spell" feature.
 ```
 > 8d6
 Rolls: 3, 3, 5, 6, 4, 6, 1, 6   Total: 34
-> rr 1 2 7
+> rr 3
 Rolls: 5, 5, 5, 6, 4, 6, 6, 6   Total: 43 (+9)
 ```
+
+The format to is ```rr <n>``` where ```n``` is the number of die to reroll.
 
 ### Other
 
