@@ -41,6 +41,9 @@ class Char:
     def spell_slots(self):
         return constants.spellslots[self.caster_level]
 
+    def unused_slots(self, level):
+        return self.spell_slots[level - 1] - self.spell_slots_used[level - 1]
+
     def print_spell_slots(self):
         out = "\nSpell Slots:"
         for i in range(0, 9):
@@ -87,7 +90,8 @@ class Char:
             ):
                 self.spell_slots_used[spell.level - 1] += 1
                 print(
-                    f"You cast {spell.name}. {self.spell_slots[spell.level - 1] - self.spell_slots_used[spell.level - 1]} level {spell.level} slots remaining."
+                    f"You cast {spell.name}. {self.unused_slots(spell.level)}"
+                    f" level {spell.level} slots remaining."
                 )
         elif spell.level == 0:
             pass
@@ -111,7 +115,8 @@ class Char:
                 have_type = False
                 while not have_type:
                     caster_type = input(
-                        "Is this class a half (h), full (f) or non (n) caster? > "
+                        "Is this class a half (h), full (f) or"
+                        " non (n) caster? > "
                     )
                     if caster_type.lower() in ["half", "full", "non"]:
                         have_type = True
@@ -159,25 +164,32 @@ class Char:
         }
 
         classes_done = False
-        prompt = "Enter your character's classes and levels: <class> <level> <class> <level> "
+        prompt = (
+            "Enter your character's classes and levels:"
+            " <class> <level> <class> <level> "
+        )
         while not classes_done:
             inpt = cli.get_input(prompt)
             if len(inpt) % 2 == 0 and len(inpt) != 0:
                 for i in range(0, len(inpt), 2):
                     klasse = inpt[i].lower()
                     if klasse not in constants.caster_types:
-                        # caster_type = input(f'Class {klasse} not found. Is this class a full, half or non caster? > ')
                         caster_type = cli.get_choice(
-                            f"Class {klasse} not found. What type of caster is it?",
+                            f"Class {klasse} not found."
+                            "What type of caster is it?",
                             ["full", "half", "non"],
                         )
                         if (
                             input(
-                                f"Confirm class {klasse} ({caster_type} caster) (y/n) > "
+                                f"Confirm class {klasse} ({caster_type}"
+                                " caster) (y/n) > "
                             ).strip()
                             != "y"
                         ):
-                            prompt = "Enter your character's classes and levels: <class> <level> <class> <level> "
+                            prompt = (
+                                "Enter your character's classes and"
+                                " levels: <class> <level> <class> <level> "
+                            )
                             break
                     else:
                         caster_type = klasse
@@ -191,11 +203,17 @@ class Char:
                             }
                         )
                     else:
-                        prompt = 'Enter the characters classes and levels: e.g. "Cleric 1 wizard 2" > '
+                        prompt = (
+                            "Enter the character's classes and levels:"
+                            ' e.g. "Cleric 1 wizard 2" > '
+                        )
                 else:
                     classes_done = True
 
             else:
-                prompt = 'Enter the characters classes and levels: e.g. "Cleric 1 wizard 2" > '
+                prompt = (
+                    "Enter the characters classes and levels:"
+                    ' e.g. "Cleric 1 wizard 2" > '
+                )
 
         return Char(**data)

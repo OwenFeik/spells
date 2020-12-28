@@ -47,7 +47,7 @@ class Tracker:
             for _ in range(int(qty)):
                 quantity += random.randint(0, die)
         else:
-            return 'This command requires you to specify a numeric quantity.'
+            return "This command requires you to specify a numeric quantity."
 
         if command in ["add", "give", "+", "+="]:
             self.quantity += quantity

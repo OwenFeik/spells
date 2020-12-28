@@ -1,9 +1,10 @@
+import roll
+
+import char
+import cli
+import commands
 import dataloaders
 import utilities
-import cli
-import char
-import commands
-import re
 
 
 class Context:
@@ -18,22 +19,17 @@ class Context:
         self.args = []
         self.option_mode = ""
         self.options = []
-        self.previous_roll = []
-        self.previous_roll_die = None
+        self.previous_roll = None
 
     def get_input(self, message="", string=None):
         try:
             if string:
-                self.raw_text = string
+                self.raw_text = string.strip()
             else:
-                self.raw_text = input(f"{message}> ")
-            self.arg_text = self.raw_text.strip().replace(",", "")
-            self.command, *self.args = [
-                arg for arg in self.arg_text.split(" ") if arg != ""
-            ]
-            self.raw_text = self.raw_text.replace(self.command, "", 1).strip()
+                self.raw_text = input(f"{message}> ").strip()
+            self.arg_text = self.raw_text.replace(",", "")
+            self.command, *self.args = self.arg_text.split()
             self.arg_text = self.arg_text.replace(self.command, "", 1).strip()
-
         except Exception as e:
             print(f"Ran into issue parsing input: {e}.")
             self.raw_text = ""
@@ -71,8 +67,8 @@ class Context:
         if options:
             self.option_mode, self.options = option_mode, options
 
-    def update_roll(self, roll_tuple):
-        self.previous_roll, self.previous_roll_die = roll_tuple
+    def update_roll(self, new_roll):
+        self.previous_roll = new_roll
 
     def character_check(self, new_char=False):
         if (
@@ -80,14 +76,14 @@ class Context:
             and new_char
             and cli.get_decision(
                 "No current character, which is required for this action. "
-                + " Create a temporary character?"
+                " Create a temporary character?"
             )
         ):
 
             self.character = char.Char()
             print(
                 'Rename your character with "rename <name>" and add '
-                + 'levels with "levelup".'
+                'levels with "levelup".'
             )
 
         return True if self.character else False
@@ -117,14 +113,19 @@ class Context:
 
             if self.command in commands.mapping:
                 commands.mapping[self.command](self)
+                return
             elif self.character and self.command in self.character.trackers:
                 if self.args:
                     t = self.character.trackers[self.command]
                     print(t.handle_command(self.args))
                 else:
                     print(self.character.trackers[self.command])
-            elif re.match(r"^[0-9]*d[0-9]+$", self.command):
-                self.update_roll(utilities.parse_roll(self.command))
+                return
+
+            rolls = roll.get_rolls(self.raw_text)
+            if rolls:
+                self.update_roll(rolls[-1])
+                print(roll.rolls_string(rolls))
             else:
                 suggestion = utilities.suggest_command(self.command)
                 if suggestion:
