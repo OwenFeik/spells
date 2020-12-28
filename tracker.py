@@ -1,6 +1,8 @@
 import re
 import random
 
+import roll
+
 
 class Tracker:
     def __init__(self, name, default=0, quantity=None, reset_on_rest=False):
@@ -38,16 +40,12 @@ class Tracker:
 
         if args[0].isnumeric():
             quantity = int(args[0])
-        elif re.match("^[0-9]*d[0-9]+$", args[0]):
-            quantity = 0
-
-            qty, die = args[0].split("d")
-            qty = 1 if qty == "" else int(qty)
-            die = int(die)
-            for _ in range(int(qty)):
-                quantity += random.randint(0, die)
         else:
-            return "This command requires you to specify a numeric quantity."
+            rolls = roll.get_rolls(" ".join(args), max_qty=1)
+            if rolls:
+                quantity = rolls[0].total
+            else:
+                return "This command requires you to specify a quantity."
 
         if command in ["add", "give", "+", "+="]:
             self.quantity += quantity
