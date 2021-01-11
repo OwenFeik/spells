@@ -3,16 +3,48 @@ import random
 
 import roll
 
-
-class Tracker:
-    def __init__(self, name, default=0, quantity=None, reset_on_rest=False):
+class AbstractTracker:
+    def __init__(self, name, default=None, quantity=None, reset_on_rest=False):
         self.name = name
-        self.quantity = quantity if quantity is not None else default
         self.default = default
+        self.quantity = quantity
         self.reset_on_rest = reset_on_rest
 
     def __str__(self):
         return f"{self.name}: {self.quantity}"
+
+    def handle_command(self, arguments):
+        raise NotImplementedError()
+
+    def reset(self):
+        if self.default is not None:
+            self.quantity = self.default
+
+    def rest(self):
+        if self.reset_on_rest:
+            self.reset()
+    
+    def to_json(self):
+        return {
+            "type": "AbstractTracker",
+            "name": self.name,
+            "quantity": self.quantity,
+            "default": self.default,
+            "reset_on_rest": self.reset_on_rest,
+        }
+
+    @staticmethod
+    def from_json(data):
+        raise NotImplementedError()
+
+class Tracker(AbstractTracker):
+    def __init__(self, name, default=0, quantity=None, reset_on_rest=False):
+        super().__init__(
+            name,
+            default,
+            quantity if quantity is not None else default,
+            reset_on_rest
+        )
 
     def handle_command(self, arguments):
         command, *args = arguments
@@ -72,21 +104,28 @@ class Tracker:
         else:
             return f"Command {command} not found."
 
-    def reset(self):
-        self.quantity = self.default
-
-    def rest(self):
-        if self.reset_on_rest:
-            self.reset()
-
     def to_json(self):
-        return {
-            "name": self.name,
-            "quantity": self.quantity,
-            "default": self.default,
-            "reset_on_rest": self.reset_on_rest,
-        }
+        return {**super().to_json(), "type": "Tracker"}
 
     @staticmethod
     def from_json(data):
         return Tracker(**data)
+
+class TrackerCollection(AbstractTracker):
+    def __init__(self, name, quantity=None, reset_on_rest=False):
+        super().__init__(
+            name,
+            quantity={} if quantity is None else quantity,
+            reset_on_rest=reset_on_rest
+        )
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "quantity": {k: self.quantity[k].to_json() for k in self.quantity},
+            "reset_on_rest": self.reset_on_rest
+        }
+
+    @staticmethod
+    def from_json(data):
+        return TrackerCollection(**data)
