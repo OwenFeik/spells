@@ -18,7 +18,7 @@ class Char:
             else:
                 print(
                     "Warning: no spellbook available,"
-                    " spellcasting functionality unavailable."
+                    " some spellcasting functionality unavailable."
                 )
         else:
             self.prepared = []
@@ -142,17 +142,14 @@ class Char:
             "classes": self.klasses,
             "spell_slots_used": self.spell_slots_used,
             "prepared": [s.name for s in self.prepared],
-            "trackers": [t.to_json() for t in list(self.trackers.values())],
+            "trackers": [t.to_json() for t in self.trackers.values()],
         }
 
     @staticmethod
     def from_json(data):
         if "trackers" in data:
             data["trackers"] = {
-                t["name"]: tracker.Tracker(
-                    t["name"], t["default"], t["quantity"], t["reset_on_rest"]
-                )
-                for t in data["trackers"]
+                t["name"]: tracker.from_json(t) for t in data["trackers"]
             }
         return Char(**data)
 
