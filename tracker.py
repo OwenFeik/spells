@@ -23,6 +23,9 @@ class AbstractTracker:
     def rest(self):
         if self.reset_on_rest:
             self.reset()
+
+    def add_to_char(self, char):
+        char.trackers[self.name] = self
     
     def to_json(self):
         return {
@@ -119,8 +122,13 @@ class TrackerCollection(AbstractTracker):
             reset_on_rest=reset_on_rest
         )
 
+    def add_to_char(self, char):
+        for t in self.quantity:
+            char.trackers[f'{self.name}.{t}'] = self.quantity[t]
+
     def to_json(self):
         return {
+            "type": "TrackerCollection",
             "name": self.name,
             "quantity": {k: self.quantity[k].to_json() for k in self.quantity},
             "reset_on_rest": self.reset_on_rest
@@ -129,3 +137,10 @@ class TrackerCollection(AbstractTracker):
     @staticmethod
     def from_json(data):
         return TrackerCollection(**data)
+
+def from_json(data):
+    return {
+        'AbstractTracker': AbstractTracker,
+        'Tracker': Tracker,
+        'TrackerCollection': TrackerCollection
+    }[data['type']](**data)
