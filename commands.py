@@ -99,14 +99,15 @@ def delchar(context):
 def clear_screen(_):
     utilities.clear_screen()
 
-
-def tracker_access(context):
+# Returns the name of the tracker being handled, or None if no further
+# processing should occur.
+def common_tracker_handling(context):
     if not context.character_check(True):
         return
 
     name = context.get_arg(0)
     if name in mapping:
-        print(f'Name "{name}" is a command and thus reserved.')
+        print(f"Name \"{name}\" is a command and thus reserved.")
     elif name and name.isnumeric():
         print("Numbers are used to select options and thus reserved.")
     elif name in context.character.trackers:
@@ -115,21 +116,41 @@ def tracker_access(context):
             print(t.handle_command(context.args[1:]))
         else:
             print(context.character.trackers[name])
+    elif context.arg_count() == 0:
+        tracker.print_tracker_iterable(context.character.trackers.values())
+    else:
+        return name
+
+
+def tracker_access(context):
+    name = common_tracker_handling(context)
+    if name is None:
+        return
     elif context.arg_count() == 1:
-        context.character.trackers[name] = tracker.Tracker(name)
+            context.character.trackers[name] = tracker.Tracker(name)
     elif (
         context.arg_count() == 3
         and context.get_arg(1) == "="
         and context.get_arg(2).isnumeric()
     ):
-
-        t = tracker.Tracker(name, default=int(context.get_arg(2)))
-        context.character.trackers[name] = t
+        tracker.Tracker(name, default=int(context.get_arg(2))).add_to_char(
+            context.character
+        )
     else:
         if context.character.trackers:
             context.character.print_trackers()
         else:
-            print('Usage: "tracker <name>" or "tracker <name> = <number>".')
+            print("Usage: \"tracker <name>\" or \"t <name> = <integer>\".")
+
+
+def tracker_collection(context):
+    name = common_tracker_handling(context)
+    if name is None:
+        return
+    elif context.arg_count() == 1:
+        tracker.TrackerCollection(name).add_to_char(context.character)
+    else:
+        print("Usage: \"tc <name>\".")
 
 
 def deltracker(context):
@@ -333,6 +354,8 @@ mapping = {
     "cls": clear_screen,
     "tracker": tracker_access,
     "t": tracker_access,
+    "collection": tracker_collection,
+    "tc": tracker_collection,
     "deltracker": deltracker,
     "dt": deltracker,
     "character": character,
