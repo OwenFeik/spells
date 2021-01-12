@@ -11,7 +11,7 @@ class AbstractTracker:
         self.reset_on_rest = reset_on_rest
 
     def __str__(self):
-        return f"{self.name}: {self.quantity}"
+        return self.to_string()
 
     def handle_command(self, arguments):
         raise NotImplementedError()
@@ -27,6 +27,9 @@ class AbstractTracker:
     def add_to_char(self, char):
         char.trackers[self.name] = self
     
+    def to_string(self, indent=0):
+        return "\t" * indent + f"{self.name}: {self.quantity}"
+
     def to_json(self):
         return {
             "type": "AbstractTracker",
@@ -121,16 +124,28 @@ class TrackerCollection(AbstractTracker):
             quantity={} if quantity is None else quantity,
             reset_on_rest=reset_on_rest
         )
+        self.trackers = self.quantity
+
+    def __str__(self):
+        return self.to_string()
 
     def add_to_char(self, char):
-        for t in self.quantity:
-            char.trackers[f'{self.name}.{t}'] = self.quantity[t]
+        char.trackers[self.name] = self
+        for name in self.trackers:
+            char.trackers[f'{self.name}.{name}'] = self.trackers[name]
+
+    def to_string(self, indent=0):
+        return "\t" * indent + stringify_tracker_iterable(
+            self.trackers.values(),
+            self.name,
+            indent + 1
+        )
 
     def to_json(self):
         return {
             "type": "TrackerCollection",
             "name": self.name,
-            "quantity": {k: self.quantity[k].to_json() for k in self.quantity},
+            "quantity": {k: self.trackers[k].to_json() for k in self.trackers},
             "reset_on_rest": self.reset_on_rest
         }
 
@@ -139,8 +154,21 @@ class TrackerCollection(AbstractTracker):
         return TrackerCollection(**data)
 
 def from_json(data):
+    try:
+        tracker_type = data.pop('type')
+    except KeyError:
+        tracker_type = 'Tracker'
+    
     return {
         'AbstractTracker': AbstractTracker,
         'Tracker': Tracker,
         'TrackerCollection': TrackerCollection
-    }[data['type']](**data)
+    }[tracker_type](**data)
+
+
+def stringify_tracker_iterable(trackers, heading="Trackers", indent=1):
+    tracker_string = "\n" + "\n".join([t.to_string(indent) for t in trackers]) 
+    return f"{heading}:{tracker_string}"
+
+def print_tracker_iterable(trackers):
+    print(f"\n{stringify_tracker_iterable(trackers)}\n")
