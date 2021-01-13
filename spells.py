@@ -20,9 +20,10 @@ c = None  # Current player character
 if cfg["load_previous_char"] and cache["character"]:
     try:
         data = dataloaders.load_character_from_path(cache["character"])
-        data.update({"sb": sb})
-        c = char.Char.from_json(data)
-        print(f"Character loaded: {str(c)}.")
+        if data is not None:
+            data.update({"sb": sb})
+            c = char.Char.from_json(data)
+            print(f"Character loaded: {str(c)}.")
     except FileNotFoundError:
         pass
 

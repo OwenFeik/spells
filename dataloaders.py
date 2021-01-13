@@ -18,9 +18,7 @@ def get_spells():
 
 
 def load_character(name):
-    with open(get_real_path(f"saves/{name.lower()}.json"), "r") as f:
-        return json.load(f)
-
+    load_character_from_path(get_real_path(f"saves/{name.lower()}.json"))
 
 def save_character(char, path=""):
     if not path:
@@ -34,7 +32,6 @@ def save_character(char, path=""):
 
     return path
 
-
 def delete_character(char):
     char_file = get_real_path(f"saves/{char}.json")
     if os.path.exists(char_file):
@@ -47,7 +44,11 @@ def delete_character(char):
 def load_character_from_path(path):
     if os.path.exists(path):
         with open(path, "r") as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.decoder.JSONDecodeError:
+                print(f'Character located at {path} corrupted.')
+                return None
     raise FileNotFoundError
 
 
