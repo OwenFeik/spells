@@ -113,11 +113,11 @@ def common_tracker_handling(context):
     elif name in context.character.trackers:
         if context.arg_count() > 1:
             t = context.character.trackers[name]
-            print(t.handle_command(context.args[1:]))
+            print(t.handle_command(context))
         else:
             print(context.character.trackers[name])
     elif context.arg_count() == 0:
-        tracker.print_tracker_iterable(context.character.trackers.values())
+        context.character.print_trackers()
     else:
         return name
 
@@ -182,7 +182,7 @@ def character(context):
 
     if context.character_check() and cli.get_decision(
         "Current character: "
-        + f"{context.character.name}. Save this character?"
+        f"{context.character.name}. Save this character?"
     ):
 
         context.save()

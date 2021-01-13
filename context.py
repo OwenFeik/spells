@@ -117,7 +117,7 @@ class Context:
             elif self.character and self.command in self.character.trackers:
                 if self.args:
                     t = self.character.trackers[self.command]
-                    print(t.handle_command(self.args))
+                    print(t.handle_command(self))
                 else:
                     print(self.character.trackers[self.command])
                 return

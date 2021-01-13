@@ -52,6 +52,15 @@ class Char:
             )
         print(out + "\n")
 
+    def print_trackers(self):
+        not_collected = []
+        
+        for t in self.trackers:
+            if not '.' in t:
+                not_collected.append(self.trackers[t])
+
+        tracker.print_tracker_iterable(not_collected)
+
     def long_rest(self):
         self.spell_slots_used = [0] * 9
         for t in self.trackers.values():
