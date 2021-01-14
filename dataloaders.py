@@ -1,5 +1,7 @@
 import json
 import os  # Check files in saves folder
+import subprocess
+import sys
 
 import constants
 
@@ -108,3 +110,29 @@ def get_config():
 def save_config(config):
     with open(get_real_path("resources/config.json"), "w") as f:
         json.dump(config, f, indent=4)
+
+def ensure_roll_installed():
+    try:
+        import roll
+        return
+    except ImportError:
+        print("No installation of roll library found. Attempting install.")
+
+    try:
+        subprocess.check_call([
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-U",
+            "-r",
+            get_real_path("requirements.txt")
+        ])
+        import roll
+    except (subprocess.CalledProcessError, ImportError):
+        print(
+            "Failed to automatically install roll. Run "
+            "\"python -m pip install -U -r requirements.txt\" "
+            " in install directory to install dependency."
+        )
+        exit()

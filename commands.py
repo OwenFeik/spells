@@ -1,4 +1,5 @@
 import os
+import re
 
 import roll
 
@@ -126,21 +127,39 @@ def tracker_access(context):
     name = common_tracker_handling(context)
     if name is None:
         return
+
+    if re.match(r'\w+\.\w+', name):
+        c_name, name = name.split('.')
+        if c_name in context.character.trackers:
+            tc = context.character.trackers[c_name]
+        else:
+            print(f"No collection \"{c_name}\".")
+            return
+    else:
+        tc = None
+
+    if not name.isalnum():
+        print("Tracker names must be alphanumeric.")
+        return
     elif context.arg_count() == 1:
-            context.character.trackers[name] = tracker.Tracker(name)
+        t = tracker.Tracker(name)
     elif (
         context.arg_count() == 3
         and context.get_arg(1) == "="
         and context.get_arg(2).isnumeric()
     ):
-        tracker.Tracker(name, default=int(context.get_arg(2))).add_to_char(
-            context.character
-        )
+        t = tracker.Tracker(name, default=int(context.get_arg(2)))
     else:
-        if context.character.trackers:
-            context.character.print_trackers()
-        else:
-            print("Usage: \"tracker <name>\" or \"t <name> = <integer>\".")
+        print("Usage: \"tracker <name>\" or \"t <name> = <integer>\".")
+        return
+
+    if tc is not None:
+        tc.add_tracker(t)
+        tc.add_child_to_char(context.character, t)
+        print(f'Created tracker {tc.name}.{t.name}.')
+    else:
+        t.add_to_char(context.character)
+        print(f'Created tracker {t.name}.')
 
 
 def tracker_collection(context):

@@ -10,6 +10,10 @@ class AbstractTracker:
         self.quantity = quantity
         self.reset_on_rest = reset_on_rest
 
+    def __repr__(self):
+        return f'<AbstractTracker name={self.name} default={self.default} ' \
+            f'quantity={self.quantity} reset_on_rest={self.reset_on_rest}>'
+
     def __str__(self):
         return self.to_string()
 
@@ -63,6 +67,9 @@ class Tracker(AbstractTracker):
             quantity if quantity is not None else default,
             reset_on_rest
         )
+    
+    def __repr__(self):
+        return super().__repr__().replace('Abstract', '', 1)
 
     def handle_command(self, context):
         command, args = self.parse_args(context)
@@ -138,13 +145,16 @@ class TrackerCollection(AbstractTracker):
         )
         self.trackers = self.quantity
 
+    def __repr__(self):
+        return f'<TrackerCollection name={self.name} trackers={self.quantity}>'
+
     def handle_command(self, context):
         command, args = self.parse_args(context)
 
         name = args[0]
         if name not in context.character.trackers:
             if name not in self.trackers:
-                return f"If command {command} exists, it requires a" \
+                return f"If command \"{command}\" exists, it requires a" \
                     " tracker as an argument."
             else:
                 t = self.trackers[name]
@@ -155,6 +165,7 @@ class TrackerCollection(AbstractTracker):
             self.trackers[t.name] = t
             del context.character.trackers[t.name]
             self.add_child_to_char(context.character, t)
+            return f"Added {t.name} to {self.name}."
         
 
     def rest(self):
@@ -168,6 +179,9 @@ class TrackerCollection(AbstractTracker):
         char.trackers[self.name] = self
         for t in self.trackers.values():
             self.add_child_to_char(char, t)
+
+    def add_tracker(self, child):
+        self.trackers[child.name] = child
 
     def to_string(self, indent=0):
         return "\t" * indent + stringify_tracker_iterable(
@@ -186,6 +200,9 @@ class TrackerCollection(AbstractTracker):
 
     @staticmethod
     def from_json(data):
+        if 'quantity' in data:
+            trackers = data['quantity']
+            data['quantity'] = {t: from_json(trackers[t]) for t in trackers}
         return TrackerCollection(**data)
 
 def from_json(data):
@@ -198,7 +215,7 @@ def from_json(data):
         'AbstractTracker': AbstractTracker,
         'Tracker': Tracker,
         'TrackerCollection': TrackerCollection
-    }[tracker_type](**data)
+    }[tracker_type].from_json(data)
 
 
 def stringify_tracker_iterable(trackers, heading="Trackers", indent=1):
