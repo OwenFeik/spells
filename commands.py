@@ -100,6 +100,7 @@ def delchar(context):
 def clear_screen(_):
     utilities.clear_screen()
 
+
 # Returns the name of the tracker being handled, or None if no further
 # processing should occur.
 def common_tracker_handling(context):
@@ -108,7 +109,7 @@ def common_tracker_handling(context):
 
     name = context.get_arg(0)
     if name in mapping:
-        print(f"Name \"{name}\" is a command and thus reserved.")
+        print(f'Name "{name}" is a command and thus reserved.')
     elif name and name.isnumeric():
         print("Numbers are used to select options and thus reserved.")
     elif name in context.character.trackers:
@@ -128,12 +129,12 @@ def tracker_access(context):
     if name is None:
         return
 
-    if re.match(r'\w+\.\w+', name):
-        c_name, name = name.split('.')
+    if re.match(r"\w+\.\w+", name):
+        c_name, name = name.split(".")
         if c_name in context.character.trackers:
             tc = context.character.trackers[c_name]
         else:
-            print(f"No collection \"{c_name}\".")
+            print(f'No collection "{c_name}".')
             return
     else:
         tc = None
@@ -150,16 +151,16 @@ def tracker_access(context):
     ):
         t = tracker.Tracker(name, default=int(context.get_arg(2)))
     else:
-        print("Usage: \"tracker <name>\" or \"t <name> = <integer>\".")
+        print('Usage: "tracker <name>" or "t <name> = <integer>".')
         return
 
     if tc is not None:
         tc.add_tracker(t)
         tc.add_child_to_char(context.character, t)
-        print(f'Created tracker {tc.name}.{t.name}.')
+        print(f"Created tracker {tc.name}.{t.name}.")
     else:
         t.add_to_char(context.character)
-        print(f'Created tracker {t.name}.')
+        print(f"Created tracker {t.name}.")
 
 
 def tracker_collection(context):
@@ -167,9 +168,12 @@ def tracker_collection(context):
     if name is None:
         return
     elif context.arg_count() == 1:
-        tracker.TrackerCollection(name).add_to_char(context.character)
+        if not name.isalnum():
+            print("Tracker collection names must be alphanumeric.")
+        else:
+            tracker.TrackerCollection(name).add_to_char(context.character)
     else:
-        print("Usage: \"tc <name>\".")
+        print('Usage: "tc <name>".')
 
 
 def deltracker(context):
@@ -183,6 +187,9 @@ def deltracker(context):
         return
 
     try:
+        if "." in name:
+            tc, t = name.split(".")
+            context.character.trackers[tc].delete_child(t)
         del context.character.trackers[name]
         print(f'Tracker "{name}" deleted.')
     except KeyError:
@@ -200,8 +207,7 @@ def character(context):
         return
 
     if context.character_check() and cli.get_decision(
-        "Current character: "
-        f"{context.character.name}. Save this character?"
+        "Current character: " f"{context.character.name}. Save this character?"
     ):
 
         context.save()

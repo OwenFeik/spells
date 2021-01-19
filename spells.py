@@ -1,6 +1,9 @@
+import dataloaders
+
+dataloaders.ensure_roll_installed()
+
 import char
 import context
-import dataloaders
 import spellbook
 
 try:
