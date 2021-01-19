@@ -22,6 +22,7 @@ def get_spells():
 def load_character(name):
     load_character_from_path(get_real_path(f"saves/{name.lower()}.json"))
 
+
 def save_character(char, path=""):
     if not path:
         path = get_real_path(f"saves/{char.name.lower()}.json")
@@ -33,6 +34,7 @@ def save_character(char, path=""):
         json.dump(char.to_json(), f, indent=4)
 
     return path
+
 
 def delete_character(char):
     char_file = get_real_path(f"saves/{char}.json")
@@ -49,7 +51,7 @@ def load_character_from_path(path):
             try:
                 return json.load(f)
             except json.decoder.JSONDecodeError:
-                print(f'Character located at {path} corrupted.')
+                print(f"Character located at {path} corrupted.")
                 return None
     raise FileNotFoundError
 
@@ -111,28 +113,32 @@ def save_config(config):
     with open(get_real_path("resources/config.json"), "w") as f:
         json.dump(config, f, indent=4)
 
+
 def ensure_roll_installed():
     try:
         import roll
+
         return
     except ImportError:
         print("No installation of roll library found. Attempting install.")
 
     try:
-        subprocess.check_call([
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "-U",
-            "-r",
-            get_real_path("requirements.txt")
-        ])
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-U",
+                "-r",
+                get_real_path("requirements.txt"),
+            ]
+        )
         import roll
     except (subprocess.CalledProcessError, ImportError):
         print(
             "Failed to automatically install roll. Run "
-            "\"python -m pip install -U -r requirements.txt\" "
+            '"python -m pip install -U -r requirements.txt" '
             " in install directory to install dependency."
         )
         exit()

@@ -9,6 +9,7 @@ class Char:
         self.name = kwargs.get("name", "temp")
         self.klasses = kwargs.get("classes", [])
         self.spell_slots_used = kwargs.get("spell_slots_used", [0] * 9)
+
         if "prepared" in kwargs:
             if "sb" in kwargs:
                 self.prepared = [
@@ -22,7 +23,16 @@ class Char:
                 )
         else:
             self.prepared = []
+
         self.trackers = kwargs.get("trackers", {})
+        if self.trackers:
+            # Tracker collections add shortcuts to their children
+            for tc in [
+                t
+                for t in self.trackers.values()
+                if isinstance(t, tracker.TrackerCollection)
+            ]:
+                tc.add_to_char(self)
 
     def __str__(self):
         klasse_string = ", ".join(
@@ -54,9 +64,9 @@ class Char:
 
     def print_trackers(self):
         not_collected = []
-        
+
         for t in self.trackers:
-            if not '.' in t:
+            if not "." in t:
                 not_collected.append(self.trackers[t])
 
         tracker.print_tracker_iterable(not_collected)
@@ -145,7 +155,11 @@ class Char:
             "classes": self.klasses,
             "spell_slots_used": self.spell_slots_used,
             "prepared": [s.name for s in self.prepared],
-            "trackers": [t.to_json() for t in self.trackers.values()],
+            "trackers": [
+                self.trackers[k].to_json()
+                for k in self.trackers
+                if not "." in k
+            ],
         }
 
     @staticmethod
