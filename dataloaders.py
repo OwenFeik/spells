@@ -20,7 +20,7 @@ def get_spells():
 
 
 def load_character(name):
-    load_character_from_path(get_real_path(f"saves/{name.lower()}.json"))
+    return load_character_from_path(get_real_path(f"saves/{name.lower()}.json"))
 
 
 def save_character(char, path=""):
