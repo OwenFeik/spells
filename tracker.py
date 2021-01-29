@@ -31,6 +31,7 @@ class AbstractTracker:
             and command == self.name
         ):
             command, *args = args
+            command = command.lower()
 
         return command, args
 
@@ -155,28 +156,46 @@ class TrackerCollection(AbstractTracker):
     def __repr__(self):
         return f"<TrackerCollection name={self.name} trackers={self.quantity}>"
 
-    def handle_command(self, context):
-        command, args = self.parse_args(context)
-
-        name = args[0]
-        if name not in context.character.trackers:
-            if name not in self.trackers:
-                return (
-                    f'If command "{command}" exists, it requires a'
-                    " tracker as an argument."
-                )
-            else:
-                t = self.trackers[name]
-        else:
-            t = context.character.trackers[name]
-
+    def _handle_command(self, context, command, t, args):
         if command in ["add", "+", "+="]:
             self.trackers[t.name] = t
             del context.character.trackers[t.name]
             self.add_child_to_char(context.character, t)
             return f"Added {t.name} to {self.name}."
         elif command in ["remove", "-", "-="]:
-            pass
+            context.character.trackers[t.name] = t
+            del self.trackers[t.name]
+            self.remove_child_from_char(context.character, t)
+            return f"Removed {t.name} from {self.name}."
+
+    def get_tracker_from_name(self, context, name):
+        if name not in context.character.trackers:
+            if name not in self.trackers:
+                raise ValueError(f"No tracker {name} found.")
+            else:
+                t = self.trackers[name]
+        else:
+            t = context.character.trackers[name]
+
+        return t
+
+    def handle_command(self, context):
+        command, args = self.parse_args(context)
+
+        if len(args) == 0:
+            return f"If command \"{command}\" exists, it requires a \
+                tracker as an argument."
+        try:
+            t = self.get_tracker_from_name(context, args[0])
+        except ValueError as e:
+            return str(e)
+                
+        return self._handle_command(
+            context,
+            command,
+            t,
+            args[1:] if len(args) > 1 else []
+        )
 
     def rest(self):
         for t in self.trackers.values():
@@ -184,6 +203,9 @@ class TrackerCollection(AbstractTracker):
 
     def add_child_to_char(self, char, child):
         char.trackers[f"{self.name}.{child.name}"] = child
+
+    def remove_child_from_char(self, char, child):
+        del char.trackers[f"{self.name}.{child.name}"]
 
     def add_to_char(self, char):
         char.trackers[self.name] = self
@@ -216,6 +238,12 @@ class TrackerCollection(AbstractTracker):
             data["quantity"] = {t: from_json(trackers[t]) for t in trackers}
         return TrackerCollection(**data)
 
+
+class CoinCollection(TrackerCollection):
+
+    def handle_command(self, context):
+        command, args = self.parse_args(context)
+        
 
 def from_json(data):
     try:
