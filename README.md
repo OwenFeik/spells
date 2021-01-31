@@ -141,6 +141,36 @@ rolled and then applied.
 
 You can delete a tracker with ```deltracker <name>``` or ```dt <name>``` .
 
+### Tracker Collections
+
+Trackers can be organised into tracker collections. These are created with the
+command ```tc <name>``` which will create a collection with the name
+```<name>``` . Trackers can be added to this collection with
+```<name> add <tracker>``` where ```<name>``` is the name of the collection and
+```<tracker>``` is the name of the tracker to create. These can then be removed
+with ```<name> remove <tracker>``` .
+
+Trackers held in a collection can be accessed through
+```<collection>.<tracker>``` and interacted with as normal trackers. One can
+create a tracker in a collection with ```t <collection>.<tracker>``` .
+
+A preset exists for tracking coins. The command ```tc coins``` (or
+```tc wealth```) will prompt the creation of a special kind of tracker that has
+facilities for conversion between denominations of coins in Dungeons and
+Dragons. This collection offers interpretation for the following commands.
+
+* ```coins add <qty> <denomination>```
+* ```coins spend <qty><denomination>```
+
+Where ```<qty>``` is an integer and ```<denomination>``` is one of ```pp``` , 
+```gp``` , ```sp``` , ```cp``` . This will either add this many coins to the
+relevant denomination tracker or deduct this many coins, using other
+denominations if exact change is impossible.
+
+Optionally one can also enable electrum pieces, ```ep``` , with
+```coins enable_electrum``` or ```coins enable ep``` . These can be disabled
+later with ```coins disable_electrum``` or ```coins disable ep``` .
+
 ### Preparing and Casting Spells
 
 Spells can be prepared using the command ```prep <spell name>``` (or just
