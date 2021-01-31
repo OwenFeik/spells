@@ -1,3 +1,5 @@
+import traceback
+
 import roll
 
 import char
@@ -32,6 +34,8 @@ class Context:
             self.arg_text = self.arg_text.replace(self.command, "", 1).strip()
         except Exception as e:
             print(f"Ran into issue parsing input: {e}.")
+            if self.config["print_stack_traces"]:
+                traceback.print_exc()
             self.raw_text = ""
             self.arg_text = ""
             self.command = ""
@@ -117,7 +121,7 @@ class Context:
             elif self.character and self.command in self.character.trackers:
                 if self.args:
                     t = self.character.trackers[self.command]
-                    print(t.handle_command(self.args))
+                    print(t.handle_command(self))
                 else:
                     print(self.character.trackers[self.command])
                 return
@@ -137,3 +141,5 @@ class Context:
                     print(f"Unknown command: {self.command}.")
         except Exception as e:
             print(f"Ran into issue executing command: {e}.")
+            if self.config["print_stack_traces"]:
+                traceback.print_exc()

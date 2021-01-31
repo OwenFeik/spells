@@ -1,5 +1,7 @@
 import json
 import os  # Check files in saves folder
+import subprocess
+import sys
 
 import constants
 
@@ -18,8 +20,7 @@ def get_spells():
 
 
 def load_character(name):
-    with open(get_real_path(f"saves/{name.lower()}.json"), "r") as f:
-        return json.load(f)
+    return load_character_from_path(get_real_path(f"saves/{name.lower()}.json"))
 
 
 def save_character(char, path=""):
@@ -47,7 +48,11 @@ def delete_character(char):
 def load_character_from_path(path):
     if os.path.exists(path):
         with open(path, "r") as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.decoder.JSONDecodeError:
+                print(f"Character located at {path} corrupted.")
+                return None
     raise FileNotFoundError
 
 
@@ -107,3 +112,33 @@ def get_config():
 def save_config(config):
     with open(get_real_path("resources/config.json"), "w") as f:
         json.dump(config, f, indent=4)
+
+
+def ensure_roll_installed():
+    try:
+        import roll
+
+        return
+    except ImportError:
+        print("No installation of roll library found. Attempting install.")
+
+    try:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-U",
+                "-r",
+                get_real_path("requirements.txt"),
+            ]
+        )
+        import roll
+    except (subprocess.CalledProcessError, ImportError):
+        print(
+            "Failed to automatically install roll. Run "
+            '"python -m pip install -U -r requirements.txt" '
+            " in install directory to install dependency."
+        )
+        exit()

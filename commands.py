@@ -1,4 +1,5 @@
 import os
+import re
 
 import roll
 
@@ -100,7 +101,9 @@ def clear_screen(_):
     utilities.clear_screen()
 
 
-def tracker_access(context):
+# Returns the name of the tracker being handled, or None if no further
+# processing should occur.
+def common_tracker_handling(context):
     if not context.character_check(True):
         return
 
@@ -112,24 +115,71 @@ def tracker_access(context):
     elif name in context.character.trackers:
         if context.arg_count() > 1:
             t = context.character.trackers[name]
-            print(t.handle_command(context.args[1:]))
+            print(t.handle_command(context))
         else:
             print(context.character.trackers[name])
+    elif context.arg_count() == 0:
+        context.character.print_trackers()
+    else:
+        return name
+
+
+def tracker_access(context):
+    name = common_tracker_handling(context)
+    if name is None:
+        return
+
+    if re.match(r"\w+\.\w+", name):
+        c_name, name = name.split(".")
+        if c_name in context.character.trackers:
+            tc = context.character.trackers[c_name]
+        else:
+            print(f'No collection "{c_name}".')
+            return
+    else:
+        tc = None
+
+    if not name.isalnum():
+        print("Tracker names must be alphanumeric.")
+        return
     elif context.arg_count() == 1:
-        context.character.trackers[name] = tracker.Tracker(name)
+        t = tracker.Tracker(name)
     elif (
         context.arg_count() == 3
         and context.get_arg(1) == "="
         and context.get_arg(2).isnumeric()
     ):
-
         t = tracker.Tracker(name, default=int(context.get_arg(2)))
-        context.character.trackers[name] = t
     else:
-        if context.character.trackers:
-            context.character.print_trackers()
+        print('Usage: "tracker <name>" or "t <name> = <integer>".')
+        return
+
+    if tc is not None:
+        tc.add_tracker(t)
+        tc.add_child_to_char(context.character, t)
+        print(f"Created tracker {tc.name}.{t.name}.")
+    else:
+        t.add_to_char(context.character)
+        print(f"Created tracker {t.name}.")
+
+
+def tracker_collection(context):
+    name = common_tracker_handling(context)
+    if name is None:
+        return
+    elif context.arg_count() == 1:
+        if not name.isalnum():
+            print("Tracker collection names must be alphanumeric.")
+        elif name in tracker.tracker_collection_presets and cli.get_decision(
+            f'There is a collection preset for "{name}". Use this?'
+        ):
+            tracker.tracker_collection_presets[name]().add_to_char(
+                context.character
+            )
         else:
-            print('Usage: "tracker <name>" or "tracker <name> = <number>".')
+            tracker.TrackerCollection(name).add_to_char(context.character)
+    else:
+        print('Usage: "tc <name>".')
 
 
 def deltracker(context):
@@ -143,6 +193,9 @@ def deltracker(context):
         return
 
     try:
+        if "." in name:
+            tc, t = name.split(".")
+            context.character.trackers[tc].delete_child(t)
         del context.character.trackers[name]
         print(f'Tracker "{name}" deleted.')
     except KeyError:
@@ -160,8 +213,7 @@ def character(context):
         return
 
     if context.character_check() and cli.get_decision(
-        "Current character: "
-        + f"{context.character.name}. Save this character?"
+        "Current character: " f"{context.character.name}. Save this character?"
     ):
 
         context.save()
@@ -333,6 +385,8 @@ mapping = {
     "cls": clear_screen,
     "tracker": tracker_access,
     "t": tracker_access,
+    "collection": tracker_collection,
+    "tc": tracker_collection,
     "deltracker": deltracker,
     "dt": deltracker,
     "character": character,
