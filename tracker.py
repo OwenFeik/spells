@@ -158,12 +158,12 @@ class TrackerCollection(AbstractTracker):
         return f"<TrackerCollection name={self.name} trackers={self.quantity}>"
 
     def _handle_command(self, context, command, t, args):
-        if command in ["add"]:
+        if command == "add":
             self.trackers[t.name] = t
             del context.character.trackers[t.name]
             self.add_child_to_char(context.character, t)
             return f"Added {t.name} to {self.name}."
-        elif command in ["remove"]:
+        elif command == "remove":
             context.character.trackers[t.name] = t
             del self.trackers[t.name]
             self.remove_child_from_char(context.character, t)
@@ -300,11 +300,16 @@ class CoinCollection(TrackerCollection):
                     fractional * CoinCollection.DENOMINATION_MAPPING[c]
                 ) / CoinCollection.DENOMINATION_MAPPING[currencies[i]]
 
-            if abs(round(self.trackers[c].quantity) - self.trackers[c].quantity) < EPSILON:
+            if (
+                abs(
+                    round(self.trackers[c].quantity) - self.trackers[c].quantity
+                )
+                < EPSILON
+            ):
                 self.trackers[c].quantity = round(self.trackers[c].quantity)
             else:
                 self.trackers[c].quantity = int(self.trackers[c].quantity)
-           
+
             i += 1
 
     def spend_currency(self, quantity, currency):
@@ -361,7 +366,7 @@ class CoinCollection(TrackerCollection):
             self.trackers["ep"] = Tracker("ep")
             self.trackers.move_to_end("gp")
             self.trackers.move_to_end("pp")
-            
+
             return "Electrum pieces have been enabled."
         elif (len(args) == 0 and command == "disable_electrum") or (
             len(args) == 1
@@ -399,7 +404,7 @@ class CoinCollection(TrackerCollection):
         return {
             **super().to_json(),
             "type": "CoinCollection",
-            "electrum_enabled": "ep" in self.denoms
+            "electrum_enabled": "ep" in self.denoms,
         }
 
     @staticmethod
