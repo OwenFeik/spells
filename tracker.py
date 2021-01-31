@@ -182,7 +182,6 @@ class TrackerCollection(AbstractTracker):
         return t
 
     def handle_command(self, context):
-        print("fuck")
         command, args = self.parse_args(context)
 
         if len(args) == 0:
@@ -256,7 +255,9 @@ class CoinCollection(TrackerCollection):
             self.denoms.remove("ep")
 
         if kwargs.get("quantity") is None:
-            kwargs["quantity"] = collections.OrderedDict.fromkeys(self.denoms, 0)
+            kwargs["quantity"] = collections.OrderedDict()
+            for c in self.denoms:
+                kwargs["quantity"][c] = Tracker(c)
         super().__init__(name, kwargs.get("quantity"), False)
 
         self.set_regex()
@@ -295,7 +296,6 @@ class CoinCollection(TrackerCollection):
         for c in currencies:
             fractional = round(self.trackers[c].quantity % 1, 10)
             if fractional and i < len(currencies):
-                print(fractional)
                 self.trackers[currencies[i]].quantity += (
                     fractional * CoinCollection.DENOMINATION_MAPPING[c]
                 ) / CoinCollection.DENOMINATION_MAPPING[currencies[i]]
