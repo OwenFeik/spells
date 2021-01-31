@@ -1,3 +1,4 @@
+import collections
 import re
 import random
 
@@ -157,16 +158,17 @@ class TrackerCollection(AbstractTracker):
         return f"<TrackerCollection name={self.name} trackers={self.quantity}>"
 
     def _handle_command(self, context, command, t, args):
-        if command in ["add", "+", "+="]:
+        if command in ["add"]:
             self.trackers[t.name] = t
             del context.character.trackers[t.name]
             self.add_child_to_char(context.character, t)
             return f"Added {t.name} to {self.name}."
-        elif command in ["remove", "-", "-="]:
+        elif command in ["remove"]:
             context.character.trackers[t.name] = t
             del self.trackers[t.name]
             self.remove_child_from_char(context.character, t)
             return f"Removed {t.name} from {self.name}."
+        raise ValueError(f'Command "{command}" not found.')
 
     def get_tracker_from_name(self, context, name):
         if name not in context.character.trackers:
@@ -180,22 +182,21 @@ class TrackerCollection(AbstractTracker):
         return t
 
     def handle_command(self, context):
+        print("fuck")
         command, args = self.parse_args(context)
 
         if len(args) == 0:
-            return f"If command \"{command}\" exists, it requires a \
-                tracker as an argument."
+            return f'If command "{command}" exists, it requires a \
+                tracker as an argument.'
         try:
-            t = self.get_tracker_from_name(context, args[0])
+            return self._handle_command(
+                context,
+                command,
+                self.get_tracker_from_name(context, args[0]),
+                args[1:] if len(args) > 1 else [],
+            )
         except ValueError as e:
             return str(e)
-                
-        return self._handle_command(
-            context,
-            command,
-            t,
-            args[1:] if len(args) > 1 else []
-        )
 
     def rest(self):
         for t in self.trackers.values():
@@ -240,10 +241,176 @@ class TrackerCollection(AbstractTracker):
 
 
 class CoinCollection(TrackerCollection):
+    DENOMINATIONS = ["cp", "sp", "ep", "gp", "pp"]
+    DENOMINATION_MAPPING = {
+        "cp": 1,
+        "sp": 10,
+        "ep": 50,
+        "gp": 100,
+        "pp": 1000,
+    }
+
+    def __init__(self, name="", **kwargs):
+        self.denoms = CoinCollection.DENOMINATIONS[:]
+        if not kwargs.get("electrum_enabled"):
+            self.denoms.remove("ep")
+
+        if kwargs.get("quantity") is None:
+            kwargs["quantity"] = collections.OrderedDict.fromkeys(self.denoms, 0)
+        super().__init__(name, kwargs.get("quantity"), False)
+
+        self.set_regex()
+
+    def set_regex(self):
+        self.regex = re.compile(
+            r"(?P<q>\d+)(?P<c>" + r"|".join(self.denoms) + r")",
+            flags=re.IGNORECASE,
+        )
+
+    def parse_currency(self, args):
+        if len(args) == 1:
+            m = re.match(self.regex, args[0])
+            quantity = int(m.group("q"))
+            currency = m.group("c")
+        elif len(args) == 2:
+            if args[0].isnumeric() and args[1] in self.denoms:
+                quantity = int(args[0])
+                currency = args[1]
+            else:
+                quantity = currency = None
+
+        if quantity == None or currency == None:
+            raise ValueError("Failed to parse currency information.")
+        else:
+            return quantity, currency
+
+    def balance_trackers(self):
+        EPSILON = 1e-10
+
+        # This has some strange behaviour due to rounding errors, hence the
+        # rounding to epsilon in a couple of places.
+
+        currencies = list(reversed(self.denoms))
+        i = 1
+        for c in currencies:
+            fractional = round(self.trackers[c].quantity % 1, 10)
+            if fractional and i < len(currencies):
+                print(fractional)
+                self.trackers[currencies[i]].quantity += (
+                    fractional * CoinCollection.DENOMINATION_MAPPING[c]
+                ) / CoinCollection.DENOMINATION_MAPPING[currencies[i]]
+
+            if abs(round(self.trackers[c].quantity) - self.trackers[c].quantity) < EPSILON:
+                self.trackers[c].quantity = round(self.trackers[c].quantity)
+            else:
+                self.trackers[c].quantity = int(self.trackers[c].quantity)
+           
+            i += 1
+
+    def spend_currency(self, quantity, currency):
+        if self.trackers[currency].quantity >= quantity:
+            self.trackers[currency].quantity -= quantity
+        else:
+            old_quantities = {c: self.trackers[c].quantity for c in self.denoms}
+
+            total_cp = CoinCollection.DENOMINATION_MAPPING[currency] * quantity
+            for c in self.denoms:
+                tracker_cp = (
+                    CoinCollection.DENOMINATION_MAPPING[c]
+                    * self.trackers[c].quantity
+                )
+                if tracker_cp >= total_cp:
+                    self.trackers[c].quantity -= (
+                        total_cp / CoinCollection.DENOMINATION_MAPPING[c]
+                    )
+                    total_cp = 0
+                elif self.trackers[c].quantity > 0:
+                    total_cp -= tracker_cp
+                    self.trackers[c].quantity = 0
+
+            if total_cp > 0:
+                lacking_coins = (
+                    total_cp / CoinCollection.DENOMINATION_MAPPING[currency]
+                )
+                for c in old_quantities:
+                    self.trackers[c].quantity = old_quantities[c]
+                return (
+                    f"Not enough money. {lacking_coins}{currency} more"
+                    " required."
+                )
+            else:
+                self.balance_trackers()
+        return (
+            f"Spent {quantity}{currency}. Remaining: "
+            f"{self.trackers[currency].quantity}{currency}."
+        )
 
     def handle_command(self, context):
         command, args = self.parse_args(context)
-        
+
+        if (len(args) == 0 and command == "enable_electrum") or (
+            len(args) == 1
+            and command == "enable"
+            and args[0] in ["electrum", "ep"]
+        ):
+            if "ep" in self.denoms:
+                return "Electrum pieces are already being used."
+            self.denoms.insert(2, "ep")
+            self.set_regex()
+
+            self.trackers["ep"] = Tracker("ep")
+            self.trackers.move_to_end("gp")
+            self.trackers.move_to_end("pp")
+            
+            return "Electrum pieces have been enabled."
+        elif (len(args) == 0 and command == "disable_electrum") or (
+            len(args) == 1
+            and command == "disable"
+            and args[0] in ["electrum", "ep"]
+        ):
+            if "ep" in self.denoms:
+                self.denoms.remove("ep")
+                self.trackers["sp"].quantity += 5 * self.trackers["ep"].quantity
+                del self.trackers["ep"]
+                return (
+                    "Electrum pieces have been disabled. "
+                    "Your electrum has been converted to silver."
+                )
+            return "Electrum pieces are already disabled."
+
+        try:
+            quantity, currency = self.parse_currency(args)
+        except ValueError as e:
+            return (
+                f'If command "{command}" exists it requires a quantity '
+                'and currency like "10gp".'
+            )
+
+        if command in ["add", "+", "+="]:
+            self.trackers[currency].quantity += quantity
+            return (
+                f"Added {quantity} to {currency}. Current value: "
+                f"{self.trackers[currency].quantity}{currency}."
+            )
+        elif command in ["spend", "-", "-="]:
+            return self.spend_currency(quantity, currency)
+
+    def to_json(self):
+        return {
+            **super().to_json(),
+            "type": "CoinCollection",
+            "electrum_enabled": "ep" in self.denoms
+        }
+
+    @staticmethod
+    def from_json(data):
+        if "quantity" in data:
+            trackers = data["quantity"]
+            data["quantity"] = collections.OrderedDict(
+                {t: from_json(trackers[t]) for t in trackers}
+            )
+        return CoinCollection(**data)
+
 
 def from_json(data):
     try:
@@ -255,6 +422,7 @@ def from_json(data):
         "AbstractTracker": AbstractTracker,
         "Tracker": Tracker,
         "TrackerCollection": TrackerCollection,
+        "CoinCollection": CoinCollection,
     }[tracker_type].from_json(data)
 
 
@@ -265,3 +433,9 @@ def stringify_tracker_iterable(trackers, heading="Trackers", indent=1):
 
 def print_tracker_iterable(trackers):
     print(f"\n{stringify_tracker_iterable(trackers)}\n")
+
+
+tracker_collection_presets = {
+    "coins": lambda: CoinCollection("coins"),
+    "wealth": lambda: CoinCollection("wealth"),
+}
