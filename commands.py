@@ -170,6 +170,12 @@ def tracker_collection(context):
     elif context.arg_count() == 1:
         if not name.isalnum():
             print("Tracker collection names must be alphanumeric.")
+        elif name in tracker.tracker_collection_presets and cli.get_decision(
+            f'There is a collection preset for "{name}". Use this?'
+        ):
+            tracker.tracker_collection_presets[name]().add_to_char(
+                context.character
+            )
         else:
             tracker.TrackerCollection(name).add_to_char(context.character)
     else:

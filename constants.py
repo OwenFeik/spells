@@ -84,4 +84,5 @@ default_config = {
     "print_spell_rolls": True,
     "load_previous_char": True,
     "use_full_width": False,
+    "print_stack_traces": False,
 }
