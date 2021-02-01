@@ -2,7 +2,9 @@ import json
 import os  # Check files in saves folder
 import subprocess
 import sys
+import urllib.request
 
+import cli
 import constants
 
 
@@ -11,11 +13,20 @@ def get_real_path(rel_path):
 
 
 def get_spellslots(level):
-    return constants.spellslots[level]
+    return constants.SPELLSLOTS[level]
 
 
-def get_spells():
-    with open(get_real_path("resources/spells.json"), "r") as f:
+def get_spells(resource_dir="resources", prompt_download=True):
+    spells_file = get_real_path(resource_dir + "/spells.json")
+    
+    if not os.path.exists(spells_file):
+        if prompt_download and cli.get_decision("No spellbook found. Download default?"):
+            with urllib.request.urlopen(constants.DEFAULT_SPELLBOOK_URL) as f:
+                data = f.read().decode("utf-8")
+                with open(spells_file, "w") as f:
+                    f.write(data)
+
+    with open(spells_file, "r") as f:
         return json.load(f)
 
 
@@ -100,13 +111,13 @@ def get_config():
             cfg = json.load(f)
 
         # If a setting is missing from the config, use the default
-        for setting in constants.default_config:
+        for setting in constants.DEFAULT_CONFIG:
             if setting not in cfg:
-                cfg[setting] = constants.default_config[setting]
+                cfg[setting] = constants.DEFAULT_CONFIG[setting]
 
         return cfg
     except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return constants.default_config
+        return constants.DEFAULT_CONFIG
 
 
 def save_config(config):

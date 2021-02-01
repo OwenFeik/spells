@@ -112,7 +112,7 @@ def parse_spell_query(string):
 
 
 def suggest_command(command):
-    suggestion = difflib.get_close_matches(command, constants.commands, 1)
+    suggestion = difflib.get_close_matches(command, constants.COMMANDS, 1)
     if suggestion:
         suggestion = suggestion[0]
     return suggestion

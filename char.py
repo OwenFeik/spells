@@ -49,7 +49,7 @@ class Char:
 
     @property
     def spell_slots(self):
-        return constants.spellslots[self.caster_level]
+        return constants.SPELLSLOTS[self.caster_level]
 
     def unused_slots(self, level):
         return self.spell_slots[level - 1] - self.spell_slots_used[level - 1]
@@ -122,7 +122,7 @@ class Char:
             [k for k in self.klasses if k["name"] == klasse][0]["level"] += 1
         else:
             klasse = input("In which class was a level gained? > ")
-            if klasse in constants.caster_types:
+            if klasse in constants.CASTER_TYPES:
                 caster_type = klasse
             else:
                 have_type = False
@@ -145,7 +145,7 @@ class Char:
                 {
                     "name": klasse,
                     "level": 1,
-                    "caster": constants.caster_types[caster_type],
+                    "caster": constants.CASTER_TYPES[caster_type],
                 }
             )
 
@@ -187,7 +187,7 @@ class Char:
             if len(inpt) % 2 == 0 and len(inpt) != 0:
                 for i in range(0, len(inpt), 2):
                     klasse = inpt[i].lower()
-                    if klasse not in constants.caster_types:
+                    if klasse not in constants.CASTER_TYPES:
                         caster_type = cli.get_choice(
                             f"Class {klasse} not found."
                             "What type of caster is it?",
@@ -213,7 +213,7 @@ class Char:
                             {
                                 "name": inpt[i],
                                 "level": int(inpt[i + 1]),
-                                "caster": constants.caster_types[caster_type],
+                                "caster": constants.CASTER_TYPES[caster_type],
                             }
                         )
                     else:

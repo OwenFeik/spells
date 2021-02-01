@@ -1,4 +1,4 @@
-spellslots = {
+SPELLSLOTS = {
     0: [0, 0, 0, 0, 0, 0, 0, 0, 0],
     1: [2, 0, 0, 0, 0, 0, 0, 0, 0],
     2: [3, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -22,7 +22,7 @@ spellslots = {
     20: [4, 3, 3, 3, 3, 2, 2, 1, 1],
 }
 
-caster_types = {
+CASTER_TYPES = {
     "artificer": 0.5,
     "barbarian": 0,
     "bard": 1,
@@ -41,7 +41,7 @@ caster_types = {
     "full": 1,
 }
 
-commands = [
+COMMANDS = [
     "exit",
     "save",
     "info",
@@ -79,10 +79,13 @@ commands = [
     "level",
 ]
 
-default_config = {
+DEFAULT_CONFIG = {
     "print_spell_classes": True,
     "print_spell_rolls": True,
     "load_previous_char": True,
     "use_full_width": False,
     "print_stack_traces": False,
 }
+
+DEFAULT_SPELLBOOK_URL = \
+    "https://raw.githubusercontent.com/OwenFeik/spells_data/master/spells.json"
