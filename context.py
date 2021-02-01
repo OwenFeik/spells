@@ -93,9 +93,13 @@ class Context:
         return True if self.character else False
 
     def set_char(self, char, save_check=False):
-        if save_check and self.character_check() and cli.get_decision(
-            "Current character: "
-            f"{self.character.name}. Save this character?"
+        if (
+            save_check
+            and self.character_check()
+            and cli.get_decision(
+                "Current character: "
+                f"{self.character.name}. Save this character?"
+            )
         ):
             self.save()
 
