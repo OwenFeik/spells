@@ -391,7 +391,7 @@ class CoinCollection(TrackerCollection):
 
         try:
             quantity, currency = self.parse_currency(args)
-        except ValueError as e:
+        except ValueError:
             return (
                 f'If command "{command}" exists it requires a quantity '
                 'and currency like "10gp".'
