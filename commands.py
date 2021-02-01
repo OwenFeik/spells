@@ -228,14 +228,7 @@ def character(context):
 
 
 def newchar(context):
-    if context.character_check() and cli.get_decision(
-        "Current character: "
-        + f"{context.character.name}. Save this character?"
-    ):
-
-        context.save()
-
-    context.character = char.Char.from_wizard()
+    context.set_char(char.Char.from_wizard(), save_check=True)
 
 
 def prepare(context):

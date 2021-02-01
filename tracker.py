@@ -375,7 +375,10 @@ class CoinCollection(TrackerCollection):
         ):
             if "ep" in self.denoms:
                 self.denoms.remove("ep")
-                self.trackers["sp"].quantity += 5 * self.trackers["ep"].quantity
+                self.trackers["sp"].quantity += round(
+                    CoinCollection.DENOMINATION_MAPPING["ep"] / 
+                    CoinCollection.DENOMINATION_MAPPING["sp"]
+                ) * self.trackers["ep"].quantity
                 del self.trackers["ep"]
                 return (
                     "Electrum pieces have been disabled. "

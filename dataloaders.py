@@ -37,7 +37,7 @@ def save_character(char, path=""):
 
 
 def delete_character(char):
-    char_file = get_real_path(f"saves/{char}.json")
+    char_file = get_real_path(f"saves/{char.lower()}.json")
     if os.path.exists(char_file):
         os.remove(char_file)
         print(f"Deleted character {char}.")

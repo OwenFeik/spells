@@ -92,6 +92,16 @@ class Context:
 
         return True if self.character else False
 
+    def set_char(self, char, save_check=False):
+        if save_check and self.character_check() and cli.get_decision(
+            "Current character: "
+            f"{self.character.name}. Save this character?"
+        ):
+            self.save()
+
+        self.character = char
+        self.save_file = ""
+
     def spellbook_check(self):
         return True if self.spellbook else False
 

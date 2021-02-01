@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import dataloaders
 
 dataloaders.ensure_roll_installed()
