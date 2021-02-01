@@ -122,6 +122,7 @@ class Char:
             [k for k in self.klasses if k["name"] == klasse][0]["level"] += 1
         else:
             klasse = input("In which class was a level gained? > ")
+            caster_type = ""
             if klasse in constants.CASTER_TYPES:
                 caster_type = klasse
             else:

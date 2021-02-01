@@ -18,9 +18,11 @@ def get_spellslots(level):
 
 def get_spells(resource_dir="resources", prompt_download=True):
     spells_file = get_real_path(resource_dir + "/spells.json")
-    
+
     if not os.path.exists(spells_file):
-        if prompt_download and cli.get_decision("No spellbook found. Download default?"):
+        if prompt_download and cli.get_decision(
+            "No spellbook found. Download default?"
+        ):
             with urllib.request.urlopen(constants.DEFAULT_SPELLBOOK_URL) as f:
                 data = f.read().decode("utf-8")
                 with open(spells_file, "w") as f:
@@ -127,7 +129,7 @@ def save_config(config):
 
 def ensure_roll_installed():
     try:
-        import roll
+        import roll  # type: ignore (missing import is handled)
 
         return
     except ImportError:
@@ -145,7 +147,7 @@ def ensure_roll_installed():
                 get_real_path("requirements.txt"),
             ]
         )
-        import roll
+        import roll  # type: ignore (missing import is handled)
     except (subprocess.CalledProcessError, ImportError):
         print(
             "Failed to automatically install roll. Run "
