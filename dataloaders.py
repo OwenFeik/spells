@@ -170,3 +170,42 @@ def load_orcbrew(path):
         binary = f.read()
         data = edn_format.loads(binary.decode("utf-8", "ignore"))
 
+    spells = data[edn_format.Keyword("orcpub.dnd.e5/spells")]
+
+    keywords = {kw: edn_format.Keyword(kw) for kw in [
+        "name",
+        "school",
+        "level",
+        "cast",
+        "range",
+        "components",
+        "verbal",
+        "somatic",
+        "material",
+        "material-component",
+        "duration",
+        "description",
+        "spell-lists"
+    ]}
+
+    classes = {kw: edn_format.Keyword(kw.lower()) for kw in [
+        "Bard",
+        "Cleric",
+        "Druid",
+        "Paladin",
+        "Ranger",
+        "Sorcerer",
+        "Warlock",
+        "Wizard"
+    ]}
+
+    kw = lambda w: keywords[w]
+
+    # spells_json = {}
+    # for spell in spells.values():
+    #     spell_json = {spell[kw(w)] for w in [
+    #         "name",
+    #         "school",
+    #         "level"
+
+    #     ]}
