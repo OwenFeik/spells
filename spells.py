@@ -2,7 +2,7 @@
 
 import dataloaders
 
-dataloaders.ensure_roll_installed()
+dataloaders.ensure_module_installed("roll")
 
 import char
 import context

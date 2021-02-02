@@ -1,5 +1,6 @@
+import importlib
 import json
-import os  # Check files in saves folder
+import os
 import subprocess
 import sys
 import urllib.request
@@ -127,13 +128,18 @@ def save_config(config):
         json.dump(config, f, indent=4)
 
 
-def ensure_roll_installed():
+def ensure_module_installed(module):
     try:
-        import roll  # type: ignore (missing import is handled)
+        importlib.import_module(module)
 
         return
     except ImportError:
-        print("No installation of roll library found. Attempting install.")
+        if not cli.get_decision(
+            f'No installation of "{module}" '
+            "Attempt automatic dependency install?"
+        ):
+            print("Exiting due to missing module.")
+            raise SystemExit
 
     try:
         subprocess.check_call(
@@ -147,11 +153,20 @@ def ensure_roll_installed():
                 get_real_path("requirements.txt"),
             ]
         )
-        import roll  # type: ignore (missing import is handled)
+        importlib.import_module(module)
     except (subprocess.CalledProcessError, ImportError):
         print(
-            "Failed to automatically install roll. Run "
+            f'Failed to automatically install "{module}". Run '
             '"python -m pip install -U -r requirements.txt" '
-            " in install directory to install dependency."
+            " in install directory to install dependencies."
         )
-        exit()
+        raise SystemExit
+
+def load_orcbrew(path):
+    ensure_module_installed("edn_format")
+    import edn_format
+
+    with open(path, "rb") as f:
+        binary = f.read()
+        data = edn_format.loads(binary.decode("utf-8", "ignore"))
+
