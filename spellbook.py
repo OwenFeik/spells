@@ -1,5 +1,7 @@
-import dataloaders
 import difflib
+
+import cli
+import dataloaders
 import utilities
 
 
@@ -22,9 +24,9 @@ class Spellbook:
             self.spells.update(alt_names)
 
             self.names = list(self.spells.keys())
-            self._names = [
-                name.lower() for name in self.names
-            ]  # Used to match queries through difflib
+
+            # Used to match queries through difflib
+            self._names = [name.lower() for name in self.names]
         except Exception as e:
             raise ValueError from e
 
@@ -56,6 +58,33 @@ class Spellbook:
         for spell in queries:
             spells.append(self.get_spell(spell))
         return spells
+
+    def add_spell(self, spell):
+        if spell.name in self.names and not cli.get_decision(
+            f"{spell.name} is already in your spellbook."
+            " Would you like to replace it?"
+        ):
+            return
+
+        self.spells[spell.name] = spell
+
+        if spell.name not in self.names:
+            self.names.append(spell.name)
+            self._names.append(spell.name)
+
+    def add_spells(self, spells):
+        for spell in spells:
+            self.add_spell(spell)
+
+    def get_spells_json(self):
+        unique_check = []
+        spells = []
+        for spell in self.spells.values():
+            if not spell in unique_check:
+                spells.append(spell.to_json())
+                unique_check.append(spell)
+
+        return sorted(spells, key=lambda sp: sp["name"])
 
 
 class Spell:

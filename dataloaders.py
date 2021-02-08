@@ -8,6 +8,8 @@ import urllib.request
 import cli
 import constants
 import spellbook
+import utilities
+
 
 def get_real_path(rel_path):
     return os.path.join(os.path.dirname(__file__), rel_path)
@@ -162,67 +164,104 @@ def ensure_module_installed(module):
         )
         raise SystemExit
 
+
 def load_orcbrew(path, sb):
     ensure_module_installed("edn_format")
     import edn_format
 
-    with open(path, "rb") as f:
-        binary = f.read()
-        data = edn_format.loads(binary.decode("utf-8", "ignore"))
+    try:
+        with open(path, "rb") as f:
+            binary = f.read()
+            data = edn_format.loads(binary.decode("utf-8", "ignore"))
+    except FileNotFoundError:
+        print(f'Couldn\'t find an orcbrew at "{path}".')
+        return
+    except edn_format.EDNDecodeError:
+        print("Failed to read the orcbrew file.")
+        return
 
     spells = data[edn_format.Keyword("orcpub.dnd.e5/spells")]
 
-    keywords = {kw: edn_format.Keyword(kw) for kw in [
-        "name",
-        "school",
-        "level",
-        "casting_time",
-        "range",
-        "duration",
-        "components",
-        "verbal",
-        "somatic",
-        "material",
-        "material-component",
-        "duration",
-        "description",
-        "spell-lists"
-    ]}
-
-    classes = {kw: edn_format.Keyword(kw.lower()) for kw in [
-        "Bard",
-        "Cleric",
-        "Druid",
-        "Paladin",
-        "Ranger",
-        "Sorcerer",
-        "Warlock",
-        "Wizard"
-    ]}
-
-    kw = lambda w: keywords[w]
-
-    spell_jsons = []
-    for spell in spells.values():
-        spell_json = {spell[kw(w)]: w for w in [
+    keywords = {
+        kw: edn_format.Keyword(kw)
+        for kw in [
             "name",
             "school",
             "level",
-            "casting_time",
+            "casting-time",
             "range",
             "duration",
-            "description"
-        ]}
+            "components",
+            "verbal",
+            "somatic",
+            "material",
+            "material-component",
+            "duration",
+            "description",
+            "spell-lists",
+        ]
+    }
 
-        spell_json["cast"] = spell_json["casting_time"]
-        del spell_json["casting_time"]
+    classes = {
+        kw: edn_format.Keyword(kw.lower())
+        for kw in [
+            "Bard",
+            "Cleric",
+            "Druid",
+            "Paladin",
+            "Ranger",
+            "Sorcerer",
+            "Warlock",
+            "Wizard",
+        ]
+    }
+
+    kw = lambda w: keywords[w]
+
+    new_spells = []
+    for spell in spells.values():
+        spell_json = {
+            w: utilities.replace_unicode(spell[kw(w)])
+            if type(spell[kw(w)]) == str
+            else w
+            for w in [
+                "name",
+                "school",
+                "level",
+                "casting-time",
+                "range",
+                "description",
+            ]
+        }
+
+        if kw("duration") in spell:
+            spell_json["duration"] = spell[kw("duration")]
+        else:
+            spell_json["duration"] = "Instantaneous"
+
+        spell_json["cast"] = spell_json["casting-time"]
+        del spell_json["casting-time"]
 
         components = spell[kw("components")]
-        component_string = ", ".join([c[0] for c in ["verbal", "somatic", "material"] if components[kw(c)]])
-        material = components[kw("material-component")]
+        component_string = ", ".join(
+            [
+                c[0].upper()
+                for c in ["verbal", "somatic", "material"]
+                if components.get(kw(c))
+            ]
+        )
+        material = components.get(kw("material-component"))
         if material:
-            component_string += f"({material})"
-        spell_json["components"] = components
+            component_string += f" ({material})"
+
+            # some of the entries end in a closing bracket
+            # for no discernible reason.
+            if component_string[-2:] == "))" and component_string.count(
+                "("
+            ) != component_string.count(")"):
+
+                component_string = component_string[:-1]
+        spell_json["components"] = component_string
 
         spell_classes = []
         spell_lists = spell[kw("spell-lists")]
@@ -235,4 +274,12 @@ def load_orcbrew(path, sb):
         spell_json["alt_names"] = []
         spell_json["subclasses"] = []
 
-        spell_jsons.append(spell_json)
+        new_spells.append(spellbook.Spell.from_json(spell_json))
+
+    if cli.get_decision(
+        f"Found {len(new_spells)} spells. Add these to your spellbook?"
+    ):
+        sb.add_spells(new_spells)
+        if cli.get_decision('Add these spells to "spells.json"?'):
+            with open("resources/spells.json", "w") as f:
+                json.dump(sb.get_spells_json(), f, indent=4)

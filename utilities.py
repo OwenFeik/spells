@@ -121,3 +121,11 @@ def suggest_command(command):
 def capitalise(string):
     words = string.split(" ")
     return " ".join([w.capitalize() for w in words])
+
+
+def replace_unicode(string):
+    return (
+        string.replace("\u2019", "'")
+        .replace("\u2018", "'")
+        .replace("\u2013", "-")
+    )

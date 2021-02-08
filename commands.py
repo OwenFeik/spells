@@ -361,6 +361,11 @@ def load(context):
     print(f"Character loaded: {str(context.character)}.")
 
 
+def load_orcbrew(context):
+    path = context.raw_text.replace("load_orcbrew", "", 1).strip()
+    dataloaders.load_orcbrew(path, context.spellbook)
+
+
 mapping = {
     "exit": exit_app,
     "save": save,
@@ -401,4 +406,5 @@ mapping = {
     "level": level_up,
     "settings": settings,
     "load": load,
+    "load_orcbrew": load_orcbrew,
 }
