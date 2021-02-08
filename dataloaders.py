@@ -7,7 +7,7 @@ import urllib.request
 
 import cli
 import constants
-
+import spellbook
 
 def get_real_path(rel_path):
     return os.path.join(os.path.dirname(__file__), rel_path)
@@ -162,7 +162,7 @@ def ensure_module_installed(module):
         )
         raise SystemExit
 
-def load_orcbrew(path):
+def load_orcbrew(path, sb):
     ensure_module_installed("edn_format")
     import edn_format
 
@@ -176,8 +176,9 @@ def load_orcbrew(path):
         "name",
         "school",
         "level",
-        "cast",
+        "casting_time",
         "range",
+        "duration",
         "components",
         "verbal",
         "somatic",
@@ -201,11 +202,37 @@ def load_orcbrew(path):
 
     kw = lambda w: keywords[w]
 
-    # spells_json = {}
-    # for spell in spells.values():
-    #     spell_json = {spell[kw(w)] for w in [
-    #         "name",
-    #         "school",
-    #         "level"
+    spell_jsons = []
+    for spell in spells.values():
+        spell_json = {spell[kw(w)]: w for w in [
+            "name",
+            "school",
+            "level",
+            "casting_time",
+            "range",
+            "duration",
+            "description"
+        ]}
 
-    #     ]}
+        spell_json["cast"] = spell_json["casting_time"]
+        del spell_json["casting_time"]
+
+        components = spell[kw("components")]
+        component_string = ", ".join([c[0] for c in ["verbal", "somatic", "material"] if components[kw(c)]])
+        material = components[kw("material-component")]
+        if material:
+            component_string += f"({material})"
+        spell_json["components"] = components
+
+        spell_classes = []
+        spell_lists = spell[kw("spell-lists")]
+        for c in classes:
+            if spell_lists[classes[c]]:
+                spell_classes.append(c)
+        spell_json["classes"] = spell_classes
+
+        spell_json["ritual"] = False
+        spell_json["alt_names"] = []
+        spell_json["subclasses"] = []
+
+        spell_jsons.append(spell_json)
