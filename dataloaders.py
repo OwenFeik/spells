@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import urllib.request
+import warnings
 
 import cli
 import constants
@@ -223,7 +224,7 @@ def load_orcbrew(path, sb):
         spell_json = {
             w: utilities.replace_unicode(spell[kw(w)])
             if type(spell[kw(w)]) == str
-            else w
+            else spell[kw(w)]
             for w in [
                 "name",
                 "school",
