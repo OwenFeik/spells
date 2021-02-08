@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 import urllib.request
-import warnings
 
 import cli
 import constants
