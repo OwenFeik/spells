@@ -111,7 +111,7 @@ class Context:
 
     def handle_command(self):
         try:
-            if self.command.isnumeric():
+            if self.command.isnumeric() and len(self.args) == 0:
                 index = int(self.command) - 1
                 if self.options and index < len(self.options):
                     option = self.options[index]
