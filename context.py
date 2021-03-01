@@ -145,7 +145,9 @@ class Context:
                 self.update_roll(rolls[-1])
                 print(roll.rolls_string(rolls))
             else:
-                suggestion = utilities.suggest_command(self.command)
+                suggestion = utilities.suggest_command(
+                    self.command, commands.mapping.keys()
+                )
                 if suggestion:
                     print(
                         f"Unknown command: {self.command}. "
