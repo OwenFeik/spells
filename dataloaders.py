@@ -11,6 +11,18 @@ import spellbook
 import utilities
 
 
+DEFAULT_SPELLBOOK_URL = (
+    "https://raw.githubusercontent.com/OwenFeik/spells_data/master/spells.json"
+)
+
+RESOURCE_DIR = "resources"
+RESOURCE_SPELLBOOK_FILE = "spells.json"
+RESOURCE_CACHE_FILE = "cache.json"
+RESOURCE_CONFIG_FILE = "config.json"
+
+SAVES_DIR = "saves"
+
+
 def get_real_path(rel_path):
     return os.path.join(os.path.dirname(__file__), rel_path)
 
@@ -19,14 +31,27 @@ def get_spellslots(level):
     return constants.SPELLSLOTS[level]
 
 
-def get_spells(resource_dir="resources", prompt_download=True):
-    spells_file = get_real_path(resource_dir + "/spells.json")
+def ensure_dir(name):
+    dir_path = get_real_path(name)
+
+    if not os.path.exists(dir_path):
+        os.mkdir(dir_path)
+
+    return dir_path
+
+
+def ensure_path(dir_name, file):
+    return os.path.join(ensure_dir(dir_name), file)
+
+
+def get_spells(prompt_download=True):
+    spells_file = ensure_path(RESOURCE_DIR, RESOURCE_SPELLBOOK_FILE)
 
     if not os.path.exists(spells_file):
         if prompt_download and cli.get_decision(
             "No spellbook found. Download default?"
         ):
-            with urllib.request.urlopen(constants.DEFAULT_SPELLBOOK_URL) as f:
+            with urllib.request.urlopen(DEFAULT_SPELLBOOK_URL) as f:
                 data = f.read().decode("utf-8")
                 with open(spells_file, "w") as f:
                     f.write(data)
@@ -36,15 +61,14 @@ def get_spells(resource_dir="resources", prompt_download=True):
 
 
 def load_character(name):
-    return load_character_from_path(get_real_path(f"saves/{name.lower()}.json"))
+    return load_character_from_path(
+        ensure_path(SAVES_DIR, name.lower() + ".json")
+    )
 
 
-def save_character(char, path=""):
+def save_character(char, path=None):
     if not path:
-        path = get_real_path(f"saves/{char.name.lower()}.json")
-
-    if not os.path.exists(get_real_path("saves")):
-        os.mkdir(get_real_path("saves"))
+        path = ensure_path(SAVES_DIR, f"{char.name.lower()}.json")
 
     with open(path, "w") as f:
         json.dump(char.to_json(), f, indent=4)
@@ -53,7 +77,7 @@ def save_character(char, path=""):
 
 
 def delete_character(char):
-    char_file = get_real_path(f"saves/{char.lower()}.json")
+    char_file = ensure_path(SAVES_DIR, f"{char.lower()}.json")
     if os.path.exists(char_file):
         os.remove(char_file)
         print(f"Deleted character {char}.")
@@ -73,11 +97,11 @@ def load_character_from_path(path):
 
 
 def current_chars():
-    saves = os.listdir(get_real_path("saves"))
+    saves = os.listdir(get_real_path(SAVES_DIR))
     chars = []
     for save in saves:
         if ".json" in save:
-            with open(get_real_path(f"saves/{save}"), "r") as f:
+            with open(ensure_path(SAVES_DIR, save), "r") as f:
                 chars.append(json.load(f))
     return chars
 
@@ -89,30 +113,30 @@ def save_exists(name):
 
 def get_cache():
     try:
-        with open(get_real_path("resources/cache.json"), "r") as f:
+        with open(
+            os.path.join(get_real_path(RESOURCE_DIR), RESOURCE_CACHE_FILE), "r"
+        ) as f:
             return json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         return {"character": None}
 
 
 def save_cache(path=None):
-    resources_path = get_real_path("resources")
-    if not os.path.exists(resources_path):
-        os.mkdir(resources_path)
-
-    with open(resources_path + "/cache.json", "w") as f:
+    with open(ensure_path(RESOURCE_DIR, RESOURCE_CACHE_FILE), "w") as f:
         json.dump({"character": path}, f)
 
 
 def clear_cache():
-    cache_path = get_real_path("resources/cache.json")
+    cache_path = os.path.join(get_real_path(RESOURCE_DIR), RESOURCE_CACHE_FILE)
     if os.path.exists(cache_path):
         os.remove(cache_path)
 
 
 def get_config():
     try:
-        with open(get_real_path("resources/config.json"), "r") as f:
+        with open(
+            os.path.join(get_real_path(RESOURCE_DIR), RESOURCE_CONFIG_FILE), "r"
+        ) as f:
             cfg = json.load(f)
 
         # If a setting is missing from the config, use the default
@@ -126,7 +150,7 @@ def get_config():
 
 
 def save_config(config):
-    with open(get_real_path("resources/config.json"), "w") as f:
+    with open(ensure_path(RESOURCE_DIR, RESOURCE_CONFIG_FILE), "w") as f:
         json.dump(config, f, indent=4)
 
 
@@ -281,5 +305,7 @@ def load_orcbrew(path, sb):
     ):
         sb.add_spells(new_spells)
         if cli.get_decision('Add these spells to "spells.json"?'):
-            with open("resources/spells.json", "w") as f:
+            with open(
+                ensure_path(RESOURCE_DIR, RESOURCE_SPELLBOOK_FILE), "w"
+            ) as f:
                 json.dump(sb.get_spells_json(), f, indent=4)

@@ -48,7 +48,3 @@ DEFAULT_CONFIG = {
     "use_full_width": False,
     "print_stack_traces": False,
 }
-
-DEFAULT_SPELLBOOK_URL = (
-    "https://raw.githubusercontent.com/OwenFeik/spells_data/master/spells.json"
-)
