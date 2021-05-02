@@ -12,7 +12,8 @@ import utilities
 
 
 DEFAULT_SPELLBOOK_URL = (
-    "https://raw.githubusercontent.com/OwenFeik/spells_data/master/spells.json"
+    "https://raw.githubusercontent.com/"
+    "OwenFeik/spells_data/master/spells.json"
 )
 
 RESOURCE_DIR = "resources"

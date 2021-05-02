@@ -165,10 +165,17 @@ class Char:
 
     @staticmethod
     def from_json(data):
-        if "trackers" in data:
-            data["trackers"] = {
-                t["name"]: tracker.from_json(t) for t in data["trackers"]
-            }
+        try:
+            if "trackers" in data:
+                data["trackers"] = {
+                    t["name"]: tracker.from_json(t) for t in data["trackers"]
+                }
+        except:
+            print(
+                "Failed to parse tracker information."
+                " Defaulting to empty collection."
+            )
+            del data["trackers"]
         return Char(**data)
 
     @staticmethod

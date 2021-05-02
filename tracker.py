@@ -1,8 +1,9 @@
 import collections
 import re
-import random
 
 import roll
+
+import cli
 
 
 class AbstractTracker:
@@ -27,9 +28,8 @@ class AbstractTracker:
         command, *args = context.args
         command = command.lower()
 
-        if (
-            context.command in ["t", "tracker", "tc", "collection"]
-            and command == self.name
+        if context.command in ["t", "tracker", "tc", "collection"] and (
+            command == self.name or re.match(rf"\w+\.{self.name}", command)
         ):
             command, *args = args
             command = command.lower()
@@ -55,7 +55,7 @@ class AbstractTracker:
 
     def to_json(self):
         return {
-            "type": "AbstractTracker",
+            "type": self.__class__.__name__,
             "name": self.name,
             "quantity": self.quantity,
             "default": self.default,
@@ -79,9 +79,7 @@ class Tracker(AbstractTracker):
     def __repr__(self):
         return super().__repr__().replace("Abstract", "", 1)
 
-    def handle_command(self, context):
-        command, args = self.parse_args(context)
-
+    def _handle_command(self, command, args):
         if command == "reset":
             self.quantity = self.default
             return f"Reset {self.name} to {self.quantity}."
@@ -136,12 +134,38 @@ class Tracker(AbstractTracker):
         else:
             return f"Command {command} not found."
 
-    def to_json(self):
-        return {**super().to_json(), "type": "Tracker"}
+    def handle_command(self, context):
+        return self._handle_command(*self.parse_args(context))
 
     @staticmethod
     def from_json(data):
         return Tracker(**data)
+
+
+class CoinTracker(Tracker):
+    def __init__(self, name, default=0, quantity=0, reset_on_rest=False):
+        super().__init__(
+            name=name,
+            default=default,
+            quantity=quantity,
+            reset_on_rest=reset_on_rest,
+        )
+
+    def handle_command(self, context):
+        command, args = self.parse_args(context)
+
+        scrubbed_args = []
+        for arg in args:
+            if (m := re.match(fr"(?P<qty>\d+){self.name}", arg)) :
+                scrubbed_args.append(m.group("qty"))
+            else:
+                scrubbed_args.append(arg)
+
+        return self._handle_command(command, scrubbed_args)
+
+    @staticmethod
+    def from_json(data):
+        return CoinTracker(**data)
 
 
 class TrackerCollection(AbstractTracker):
@@ -225,7 +249,7 @@ class TrackerCollection(AbstractTracker):
 
     def to_json(self):
         return {
-            "type": "TrackerCollection",
+            "type": self.__class__.__name__,
             "name": self.name,
             "quantity": {k: self.trackers[k].to_json() for k in self.trackers},
             "reset_on_rest": self.reset_on_rest,
@@ -257,7 +281,7 @@ class CoinCollection(TrackerCollection):
         if kwargs.get("quantity") is None:
             kwargs["quantity"] = collections.OrderedDict()
             for c in self.denoms:
-                kwargs["quantity"][c] = Tracker(c)
+                kwargs["quantity"][c] = CoinTracker(c)
         super().__init__(name, kwargs.get("quantity"), False)
 
         self.set_regex()
@@ -269,16 +293,19 @@ class CoinCollection(TrackerCollection):
         )
 
     def parse_currency(self, args):
-        if len(args) == 1:
-            m = re.match(self.regex, args[0])
-            quantity = int(m.group("q"))
-            currency = m.group("c")
-        elif len(args) == 2:
-            if args[0].isnumeric() and args[1] in self.denoms:
-                quantity = int(args[0])
-                currency = args[1]
-            else:
-                quantity = currency = None
+        try:
+            if len(args) == 1:
+                m = re.match(self.regex, args[0])
+                quantity = int(m.group("q"))
+                currency = m.group("c")
+            elif len(args) == 2:
+                if args[0].isnumeric() and args[1] in self.denoms:
+                    quantity = int(args[0])
+                    currency = args[1]
+                else:
+                    quantity = currency = None
+        except:
+            quantity = currency = None
 
         if quantity == None or currency == None:
             raise ValueError("Failed to parse currency information.")
@@ -363,7 +390,7 @@ class CoinCollection(TrackerCollection):
             self.denoms.insert(2, "ep")
             self.set_regex()
 
-            self.trackers["ep"] = Tracker("ep")
+            self.trackers["ep"] = CoinTracker("ep")
             self.trackers.move_to_end("gp")
             self.trackers.move_to_end("pp")
 
@@ -409,7 +436,6 @@ class CoinCollection(TrackerCollection):
     def to_json(self):
         return {
             **super().to_json(),
-            "type": "CoinCollection",
             "electrum_enabled": "ep" in self.denoms,
         }
 
@@ -417,9 +443,27 @@ class CoinCollection(TrackerCollection):
     def from_json(data):
         if "quantity" in data:
             trackers = data["quantity"]
-            data["quantity"] = collections.OrderedDict(
-                {t: from_json(trackers[t]) for t in trackers}
-            )
+            tracker_objects = {}
+
+            # Handle old save files which don't use CoinTracker objects for
+            # wealth by allowing user to update them to the new style
+            # optionally.
+            update_old_type = None
+            for t in trackers:
+                tracker_data = trackers[t]
+                if tracker_data.get("type") == "Tracker":
+                    if update_old_type is None:
+                        update_old_type = cli.get_decision(
+                            "Old save file uses less flexible classic trackers"
+                            " rather than custom coin trackers for coin"
+                            " collection. Update to new type?"
+                        )
+
+                    if update_old_type:
+                        tracker_data["type"] = "CoinTracker"
+                tracker_objects[t] = from_json(tracker_data)
+
+            data["quantity"] = collections.OrderedDict(tracker_objects)
         return CoinCollection(**data)
 
 
@@ -429,12 +473,7 @@ def from_json(data):
     except KeyError:
         tracker_type = "Tracker"
 
-    return {
-        "AbstractTracker": AbstractTracker,
-        "Tracker": Tracker,
-        "TrackerCollection": TrackerCollection,
-        "CoinCollection": CoinCollection,
-    }[tracker_type].from_json(data)
+    return globals()[tracker_type].from_json(data)
 
 
 def stringify_tracker_iterable(trackers, heading="Trackers", indent=1):
