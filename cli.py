@@ -150,8 +150,13 @@ def get_input(prompt):
     ]
 
 
-def get_decision(prompt):
-    return input(f"{prompt} (y/n) > ").strip().lower() in ["y", ""]
+def get_decision(prompt, default=True):
+    p = f"{prompt} ("
+    p += "Y" if default else "y"
+    p += "/n) > "
+
+    resp = input(p).strip().lower()
+    return resp == "y" or default and resp == ""
 
 
 def get_choice(prompt, items):
@@ -165,3 +170,15 @@ def get_choice(prompt, items):
         return items[int(choice) - 1]
     elif choice in items:
         return choice
+
+
+def get_integer(prompt, default=None):
+    p = f"{prompt} (number"
+    if default is not None:
+        p += f", default {default}"
+    p += ") > "
+
+    while not ((v := input(p)).isnumeric() or (v := default) is not None):
+        print("Please enter a number.")
+
+    return v

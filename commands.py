@@ -366,6 +366,10 @@ def load_orcbrew(context):
     dataloaders.load_orcbrew(path, context.spellbook)
 
 
+def test_stats(context):
+    print(char.Stats.from_wizard())
+
+
 mapping = {
     "exit": exit_app,
     "save": save,
@@ -407,4 +411,5 @@ mapping = {
     "settings": settings,
     "load": load,
     "load_orcbrew": load_orcbrew,
+    "test_stats": test_stats,
 }

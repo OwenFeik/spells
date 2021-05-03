@@ -239,3 +239,48 @@ class Char:
                 )
 
         return Char(**data)
+
+
+class Stats:
+    DEFAULT_VALUE = 10
+    DND_STATS = ["str", "dex", "con", "int", "wis", "cha"]
+
+    def __init__(self, **kwargs):
+        self.str = kwargs.get("str", Stats.DEFAULT_VALUE)
+        self.dex = kwargs.get("dex", Stats.DEFAULT_VALUE)
+        self.con = kwargs.get("con", Stats.DEFAULT_VALUE)
+        self.int = kwargs.get("int", Stats.DEFAULT_VALUE)
+        self.wis = kwargs.get("wis", Stats.DEFAULT_VALUE)
+        self.cha = kwargs.get("cha", Stats.DEFAULT_VALUE)
+
+    def __str__(self):
+        string = "Stats:\n\t"
+        string += "\n\t".join(
+            f"{s.upper()}: {self.__getattribute__(s)}" for s in Stats.DND_STATS
+        )
+        return string
+
+    def to_json(self):
+        return {
+            "str": self.str,
+            "dex": self.dex,
+            "con": self.con,
+            "int": self.int,
+            "wis": self.int,
+            "cha": self.cha,
+        }
+
+    @staticmethod
+    def from_wizard():
+        stats = {}
+
+        for stat in Stats.DND_STATS:
+            stats[stat] = cli.get_integer(
+                stat.upper() + " score", Stats.DEFAULT_VALUE
+            )
+
+        return Stats(**stats)
+
+    @staticmethod
+    def from_json(data):
+        return Stats(**data)

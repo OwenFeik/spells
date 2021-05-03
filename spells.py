@@ -36,6 +36,15 @@ context = context.Context(sb, cfg, c)
 if c is not None:
     context.save_file = cache["character"]
 
-while True:
-    context.get_input()
-    context.handle_command()
+try:
+    while True:
+        context.get_input()
+        try:
+            context.handle_command()
+        except KeyboardInterrupt:
+            print(
+                "\n^C again to exit without saving, or use"
+                ' "exit" to exit gracefully.'
+            )
+except KeyboardInterrupt:
+    print()
