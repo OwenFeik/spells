@@ -182,7 +182,7 @@ class Char:
             del data["trackers"]
 
         try:
-            if "stats" in data:
+            if data.get("stats") is not None:
                 data["stats"] = Stats.from_json(data["stats"])
         except:
             print("Failed to parse stats information. Dropping stats.")

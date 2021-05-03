@@ -68,71 +68,144 @@ class AbstractTracker:
 
 
 class Tracker(AbstractTracker):
-    def __init__(self, name="", default=0, quantity=None, reset_on_rest=False):
+    def __init__(self, **kwargs):
         super().__init__(
-            name,
-            default,
-            quantity if quantity is not None else default,
-            reset_on_rest,
+            kwargs.get("name", ""),
+            kwargs.get("default"),
+            kwargs.get("quantity", kwargs.get("default", 0)),
+            kwargs.get("reset_on_rest"),
         )
+        self.maximum = kwargs.get("maximum")
+        self.minimum = kwargs.get("minimum")
 
     def __repr__(self):
         return super().__repr__().replace("Abstract", "", 1)
 
+    def reset(self):
+        super().reset()
+
+        if self.default is not None:
+            return f"Reset {self.name} to {self.quantity}."
+        else:
+            return f"{self.name} has no default to reset to."
+
+    def bounds_check(self, enforce=True, value=None):
+        if value is None:
+            value = self.quantity
+        else:
+            enforce = False
+
+        if self.maximum is not None and value > self.maximum:
+            if enforce:
+                self.quantity = self.maximum
+                return f"Now at maximum: {self.maximum}."
+            else:
+                return f"Warning: over maximum of {self.maximum}."
+        elif self.minimum is not None and value < self.minimum:
+            if enforce:
+                self.quantity = self.minimum
+                return f"Now at minimum: {self.minimum}."
+            else:
+                return f"Warning: below minimum of {self.minimum}."
+
+    def add(self, quantity):
+        self.quantity += quantity
+        message = f"Added {quantity} to {self.name}. "
+
+        if (m := self.bounds_check()) :
+            message += m
+        else:
+            message += f"Current value: {self.quantity}."
+
+        return message
+
+    def remove(self, quantity):
+        self.quantity -= quantity
+        message = f"Took {quantity} from {self.name}. "
+
+        if (m := self.bounds_check()) :
+            message += m
+        else:
+            message += f"Current value: {self.quantity}."
+
+        return message
+
+    def toggle_rest_behaviour(self):
+        self.reset_on_rest = not self.reset_on_rest
+        return (
+            f"Changed rest reset flag for {self.name}."
+            f" Now {self.reset_on_rest}."
+        )
+
+    def set_default(self, quantity):
+        self.default = quantity
+        message = f"Set default of {self.name} to {self.default}."
+        if (m := self.bounds_check(value=self.default)) :
+            message += f" {m}"
+        return message
+
+    def set_quantity(self, quantity):
+        self.quantity = quantity
+        message = f"Set {self.name} to {quantity}."
+
+        if (m := self.bounds_check(enforce=False)) :
+            message += f" {m}"
+
+        return message
+
+    def set_maximum(self, quantity):
+        self.maximum = quantity
+        return f"Set maximum of {self.name} to {self.maximum}."
+
+    def set_minimum(self, quantity):
+        self.minimum = quantity
+        return f"Set minimum of {self.name} to {self.minimum}."
+
     def _handle_command(self, command, args):
         if command == "reset":
-            self.quantity = self.default
-            return f"Reset {self.name} to {self.quantity}."
+            return self.reset()
         elif command == "rest":
-            self.reset_on_rest = not self.reset_on_rest
-            return (
-                f"Changed rest reset flag for {self.name}."
-                f'Now "{self.reset_on_rest}".'
-            )
+            return self.toggle_rest_behaviour()
         elif command == "++":
-            self.quantity += 1
-            return f"Incremented {self.name}. Current value: {self.quantity}"
+            return self.add(1)
         elif command == "--":
-            self.quantity -= 1
-            return f"Decremented {self.name}. Current value: {self.quantity}"
+            return self.remove(1)
         elif command == "default" and not args:
             return f"Current default value of {self.name}: {self.default}."
-        elif not args:
+
+        if not args:
             return f"If command {command} exists, it requires arguments."
 
+        quantity = None
         if args[0].isnumeric():
             quantity = int(args[0])
         else:
             rolls = roll.get_rolls(" ".join(args), max_qty=1)
             if rolls:
                 quantity = rolls[0].total
-            else:
-                return "This command requires you to specify a quantity."
 
-        if command in ["add", "give", "+", "+="]:
-            self.quantity += quantity
-            return (
-                f"Added {quantity} to {self.name}."
-                f" Current value: {self.quantity}."
-            )
-        elif command in ["subtract", "take", "-", "-="]:
-            self.quantity -= quantity
-            return (
-                f"Subtracted {quantity} from {self.name}."
-                f"Current value: {self.quantity}."
-            )
-        elif command in ["set", "="]:
-            self.quantity = quantity
-            return f"Set {self.name} to {self.quantity}."
-        elif command == "default":
-            # Allow for t default = 3 as well as t default 3.
+        if quantity is not None:
+            if command in ["add", "give", "+", "+="]:
+                return self.add(quantity)
+            elif command in ["subtract", "take", "-", "-="]:
+                return self.remove(quantity)
+        else:
+            # Allow for t default = 3 as well as t default 3 for these commands.
             if args[0] == "=" and args[1].isnumeric():
                 quantity = int(args[1])
+            else:
+                return f"If command {command} exists, it requires a quantity."
 
-            self.default = quantity
-            return f"Set default of {self.name} to {self.default}."
-        else:
-            return f"Command {command} not found."
+        if command == "default":
+            return self.set_default(quantity)
+        elif command in ["set", "="]:
+            return self.set_quantity(quantity)
+        elif command in ["max", "maximum"]:
+            return self.set_maximum(quantity)
+        elif command in ["min", "minimum"]:
+            return self.set_minimum(quantity)
+
+        return f"Command {command} not found."
 
     def handle_command(self, context):
         return self._handle_command(*self.parse_args(context))
@@ -166,6 +239,20 @@ class CoinTracker(Tracker):
     @staticmethod
     def from_json(data):
         return CoinTracker(**data)
+
+
+class HitDieTracker(Tracker):
+    def __init__(self, name="hd", default=0, quantity=0, reset_on_rest=True):
+        super().__init__(
+            name=name,
+            default=default,
+            quantity=quantity,
+            reset_on_rest=reset_on_rest,
+        )
+
+    def rest(self):
+        if self.reset_on_rest:
+            pass
 
 
 class TrackerCollection(AbstractTracker):
@@ -258,8 +345,7 @@ class TrackerCollection(AbstractTracker):
     @staticmethod
     def from_json(data):
         if "quantity" in data:
-            trackers = data["quantity"]
-            data["quantity"] = {t: from_json(trackers[t]) for t in trackers}
+            data["quantity"] = collection_from_json(data["quantity"])
         return TrackerCollection(**data)
 
 
@@ -467,6 +553,21 @@ class CoinCollection(TrackerCollection):
         return CoinCollection(**data)
 
 
+class HealthCollection(TrackerCollection):
+    def __init__(self, **kwargs):
+        if kwargs.get("quantity") is None:
+            kwargs["quantity"] = {
+                "hp": Tracker("hp", 0, 0, True),
+                "hd": Tracker("hd"),
+            }
+
+        super().__init__(
+            name=kwargs.get("name", "health"),
+            quantity=kwargs.get("quantity"),
+            reset_on_rest=True,
+        )
+
+
 def from_json(data):
     try:
         tracker_type = data.pop("type")
@@ -474,6 +575,10 @@ def from_json(data):
         tracker_type = "Tracker"
 
     return globals()[tracker_type].from_json(data)
+
+
+def collection_from_json(data):
+    return {t: from_json(data[t]) for t in data}
 
 
 def stringify_tracker_iterable(trackers, heading="Trackers", indent=1):

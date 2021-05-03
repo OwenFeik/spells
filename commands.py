@@ -143,13 +143,13 @@ def tracker_access(context):
         print("Tracker names must be alphanumeric.")
         return
     elif context.arg_count() == 1:
-        t = tracker.Tracker(name)
+        t = tracker.Tracker(name=name)
     elif (
         context.arg_count() == 3
         and context.get_arg(1) == "="
         and context.get_arg(2).isnumeric()
     ):
-        t = tracker.Tracker(name, default=int(context.get_arg(2)))
+        t = tracker.Tracker(name=name, default=int(context.get_arg(2)))
     else:
         print('Usage: "tracker <name>" or "t <name> = <integer>".')
         return
@@ -177,7 +177,7 @@ def tracker_collection(context):
                 context.character
             )
         else:
-            tracker.TrackerCollection(name).add_to_char(context.character)
+            tracker.TrackerCollection(name=name).add_to_char(context.character)
     else:
         print('Usage: "tc <name>".')
 
