@@ -5,6 +5,7 @@ import dataloaders
 dataloaders.ensure_module_installed("roll")
 
 import char
+import cli
 import context
 import spellbook
 
@@ -36,15 +37,27 @@ context = context.Context(sb, cfg, c)
 if c is not None:
     context.save_file = cache["character"]
 
-try:
-    while True:
+graceless = False  # allow ^C to exit if user has been warned
+while True:
+    try:
         context.get_input()
+        graceless = False
+    except KeyboardInterrupt:  # Handle ^C during input
+        print()
+
         try:
-            context.handle_command()
-        except KeyboardInterrupt:
-            print(
-                "\n^C again to exit without saving, or use"
-                ' "exit" to exit gracefully.'
-            )
-except KeyboardInterrupt:
-    print()
+            if graceless or cli.get_decision("Exit gracelessly?"):
+                exit()
+        except KeyboardInterrupt:  # Allow repeated ^C to confirm
+            print()
+            exit()
+
+    try:
+        context.handle_command()
+    except KeyboardInterrupt:  # Allow breaking out of dialogs with ^C
+        print(
+            " Command cancelled."
+            "\n^C again to exit without saving, or use"
+            ' "exit" to exit gracefully.'
+        )
+        graceless = True

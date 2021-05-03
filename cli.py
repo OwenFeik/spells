@@ -142,19 +142,21 @@ def print_list(title, items, afterword=""):
     print()
 
 
-def get_input(prompt):
-    return [
-        string
-        for string in input(f"{prompt}> ").strip().split(" ")
-        if string != ""
-    ]
+def get_input(prompt, split=False, default=None):
+    p = prompt
+    if default is not None:
+        p += f" (default {default})"
+    p += " > "
+
+    string = input(p).strip()
+
+    if not string and default is not None:
+        return default
+    return string.split() if split else string
 
 
 def get_decision(prompt, default=True):
-    p = f"{prompt} ("
-    p += "Y" if default else "y"
-    p += "/n) > "
-
+    p = f"{prompt} ({'Y' if default else 'y'}/{'n' if default else 'N'}) > "
     resp = input(p).strip().lower()
     return resp == "y" or default and resp == ""
 
@@ -163,11 +165,14 @@ def get_choice(prompt, items):
     print_list(prompt, items)
 
     choice = input("> ")
-    while not choice.isnumeric() and not choice in items:
+    while (
+        not (choice.isnumeric() and int(choice) <= len(items))
+        and not choice in items
+    ):
         choice = input("Please enter the number of an item from the options > ")
 
-    if choice.isnumeric():
-        return items[int(choice) - 1]
+    if choice.isnumeric() and (i := int(choice) - 1) < len(items):
+        return items[i]
     elif choice in items:
         return choice
 

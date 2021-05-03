@@ -366,8 +366,23 @@ def load_orcbrew(context):
     dataloaders.load_orcbrew(path, context.spellbook)
 
 
-def test_stats(context):
-    print(char.Stats.from_wizard())
+def stats(context):
+    if not context.character_check(True):
+        return
+
+    if context.character.stats is None:
+        if cli.get_decision(
+            f"{context.character.name} has no stats. Add them?"
+        ):
+            context.character.stats = char.Stats.from_wizard()
+
+    print(
+        f"\n"
+        + context.character.stats.indented_string(
+            context.character.name + "'s stats"
+        )
+        + "\n"
+    )
 
 
 mapping = {
@@ -411,5 +426,5 @@ mapping = {
     "settings": settings,
     "load": load,
     "load_orcbrew": load_orcbrew,
-    "test_stats": test_stats,
+    "stats": stats,
 }

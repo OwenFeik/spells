@@ -3,6 +3,8 @@ import cli
 import tracker
 import utilities
 
+import roll
+
 
 class Char:
     def __init__(self, **kwargs):
@@ -33,6 +35,8 @@ class Char:
                 if isinstance(t, tracker.TrackerCollection)
             ]:
                 tc.add_to_char(self)
+
+        self.stats = kwargs.get("stats")
 
     def __str__(self):
         klasse_string = ", ".join(
@@ -121,16 +125,15 @@ class Char:
             )
             [k for k in self.klasses if k["name"] == klasse][0]["level"] += 1
         else:
-            klasse = input("In which class was a level gained? > ")
+            klasse = cli.get_input("In which class was a level gained?")
             caster_type = ""
             if klasse in constants.CASTER_TYPES:
                 caster_type = klasse
             else:
                 have_type = False
                 while not have_type:
-                    caster_type = input(
-                        "Is this class a half (h), full (f) or"
-                        " non (n) caster? > "
+                    caster_type = cli.get_input(
+                        "Is this class a half (h), full (f) or non (n) caster?"
                     )
                     if caster_type.lower() in ["half", "full", "non"]:
                         have_type = True
@@ -161,6 +164,7 @@ class Char:
                 for k in self.trackers
                 if not "." in k
             ],
+            "stats": self.stats.to_json() if self.stats is not None else None,
         }
 
     @staticmethod
@@ -176,22 +180,30 @@ class Char:
                 " Defaulting to empty collection."
             )
             del data["trackers"]
+
+        try:
+            if "stats" in data:
+                data["stats"] = Stats.from_json(data["stats"])
+        except:
+            print("Failed to parse stats information. Dropping stats.")
+            del data["stats"]
+
         return Char(**data)
 
     @staticmethod
     def from_wizard():
         data = {
-            "name": input("What is you character's name? > "),
+            "name": cli.get_input("What is you character's name?"),
             "classes": [],
         }
 
         classes_done = False
         prompt = (
             "Enter your character's classes and levels:"
-            " <class> <level> <class> <level> "
+            " <class> <level> <class> <level>"
         )
         while not classes_done:
-            inpt = cli.get_input(prompt)
+            inpt = cli.get_input(prompt, True)
             if len(inpt) % 2 == 0 and len(inpt) != 0:
                 for i in range(0, len(inpt), 2):
                     klasse = inpt[i].lower()
@@ -201,12 +213,8 @@ class Char:
                             "What type of caster is it?",
                             ["full", "half", "non"],
                         )
-                        if (
-                            input(
-                                f"Confirm class {klasse} ({caster_type}"
-                                " caster) (y/n) > "
-                            ).strip()
-                            != "y"
+                        if not cli.get_decision(
+                            f"Confirm class {klasse} ({caster_type} caster)"
                         ):
                             prompt = (
                                 "Enter your character's classes and"
@@ -227,7 +235,7 @@ class Char:
                     else:
                         prompt = (
                             "Enter the character's classes and levels:"
-                            ' e.g. "Cleric 1 wizard 2" > '
+                            ' e.g. "Cleric 1 wizard 2"'
                         )
                 else:
                     classes_done = True
@@ -238,40 +246,36 @@ class Char:
                     ' e.g. "Cleric 1 wizard 2" > '
                 )
 
+        if cli.get_decision("Create stats for this character?"):
+            data["stats"] = Stats.from_wizard()
+
         return Char(**data)
 
 
 class Stats:
     DEFAULT_VALUE = 10
     DND_STATS = ["str", "dex", "con", "int", "wis", "cha"]
+    DEFAULT_ROLL_FORMAT = "4d6k3"
 
     def __init__(self, **kwargs):
-        self.str = kwargs.get("str", Stats.DEFAULT_VALUE)
-        self.dex = kwargs.get("dex", Stats.DEFAULT_VALUE)
-        self.con = kwargs.get("con", Stats.DEFAULT_VALUE)
-        self.int = kwargs.get("int", Stats.DEFAULT_VALUE)
-        self.wis = kwargs.get("wis", Stats.DEFAULT_VALUE)
-        self.cha = kwargs.get("cha", Stats.DEFAULT_VALUE)
+        for stat in Stats.DND_STATS:
+            setattr(self, stat, kwargs.get(stat, Stats.DEFAULT_VALUE))
 
     def __str__(self):
-        string = "Stats:\n\t"
+        return self.indented_string()
+
+    def indented_string(self, title="Stats"):
+        string = f"{title}:\n\t"
         string += "\n\t".join(
-            f"{s.upper()}: {self.__getattribute__(s)}" for s in Stats.DND_STATS
+            f"{s.upper()}: {getattr(self, s)}" for s in Stats.DND_STATS
         )
         return string
 
     def to_json(self):
-        return {
-            "str": self.str,
-            "dex": self.dex,
-            "con": self.con,
-            "int": self.int,
-            "wis": self.int,
-            "cha": self.cha,
-        }
+        return {s: getattr(self, s) for s in Stats.DND_STATS}
 
     @staticmethod
-    def from_wizard():
+    def from_entry_wizard():
         stats = {}
 
         for stat in Stats.DND_STATS:
@@ -280,6 +284,40 @@ class Stats:
             )
 
         return Stats(**stats)
+
+    @staticmethod
+    def from_rolling_wizard():
+        stats = {}
+        remaining_stats = [s.upper() for s in Stats.DND_STATS]
+
+        roll_format = cli.get_input(
+            "Stat roll format", default=Stats.DEFAULT_ROLL_FORMAT
+        )
+
+        rolls = roll.get_rolls(f"{len(remaining_stats)} {roll_format}")
+        print(f"\nYour rolls:\n{roll.rolls_string(rolls)}")
+        scores = [str(r.total) for r in sorted(rolls, key=lambda r: r.total)]
+
+        while len(remaining_stats) > 1:
+            stat = cli.get_choice(
+                "Choose a stat to assign a score to:", remaining_stats
+            )
+            remaining_stats.remove(stat)
+
+            score = cli.get_choice(f"Choose a score for {stat}", scores)
+            scores.remove(score)
+
+            stats[stat.lower()] = int(score)
+        stats[remaining_stats[0]] = scores[0]
+
+        return Stats(**stats)
+
+    @staticmethod
+    def from_wizard():
+        if cli.get_decision("Would you like to roll for stats?", False):
+            return Stats.from_rolling_wizard()
+        else:
+            return Stats.from_entry_wizard()
 
     @staticmethod
     def from_json(data):
