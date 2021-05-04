@@ -37,7 +37,7 @@ class AbstractTracker:
 
         return command, args
 
-    def handle_command(self, arguments):
+    def handle_command(self, context):
         raise NotImplementedError()
 
     def reset(self):
@@ -84,7 +84,7 @@ class TrackerCommand():
         self.arg_allow_equals = TrackerCommandOptions.ALLOW_EQUALS in options
         self.func = func
 
-    def handle(self, args):
+    def handle(self, args, character=None):
         if not args:
             if not self.needs_quantity or self.arg_optional:
                 return self.func()
@@ -172,6 +172,27 @@ class Tracker(AbstractTracker):
             )
         ]
 
+    def add_command(self, command):
+        self.commands.append(command)
+
+    def add_command_name(self, name, new):
+        target = None
+        for c in self.commands:
+            if name in c.names:
+                target = c
+            if new in c.names:
+                raise ValueError(f"A command with name {new} already exists.")
+        target.names.append(new)
+
+    def remove_command(self, name):
+        remove = []
+        for c in self.commands:
+            if name in c.names:
+                remove.append(c)
+
+        for c in remove:
+            self.commands.remove(c)
+
     def reset(self):
         super().reset()
 
@@ -254,15 +275,13 @@ class Tracker(AbstractTracker):
         self.minimum = quantity
         return f"Set minimum of {self.name} to {self.minimum}."
 
-    def _handle_command(self, command, args):
+    def handle_command(self, context):
+        command, args = self.parse_args(context)
         for c in self.commands:
             if command in c.names:
-                return c.handle(args)
+                return c.handle(args, context.character)
 
         return f"Command {command} not found."
-
-    def handle_command(self, context):
-        return self._handle_command(*self.parse_args(context))
 
     @staticmethod
     def from_json(data):
@@ -277,6 +296,7 @@ class CoinTracker(Tracker):
             quantity=quantity,
             reset_on_rest=reset_on_rest,
         )
+        self.add_command_name("subtract", "spend")
 
     def handle_command(self, context):
         command, args = self.parse_args(context)
@@ -288,7 +308,11 @@ class CoinTracker(Tracker):
             else:
                 scrubbed_args.append(arg)
 
-        return self._handle_command(command, scrubbed_args)
+        for c in self.commands:
+            if command in c.names:
+                return c.handle(args, context.character)
+        
+        return f"Command {command} not found."
 
     @staticmethod
     def from_json(data):
@@ -303,11 +327,14 @@ class HitDieTracker(Tracker):
             quantity=quantity,
             reset_on_rest=reset_on_rest,
         )
+        self.add_command(TrackerCommand(["heal"], [], self.heal))
 
     def rest(self):
-        if self.reset_on_rest:
-            pass
+        if not self.reset_on_rest:
+            return
 
+    def heal(self):
+        pass
 
 class TrackerCollection(AbstractTracker):
     def __init__(self, name="", quantity=None, reset_on_rest=False):
