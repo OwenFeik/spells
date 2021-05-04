@@ -1,4 +1,5 @@
 import collections
+import enum
 import re
 
 import roll
@@ -67,6 +68,44 @@ class AbstractTracker:
         raise NotImplementedError()
 
 
+class TrackerCommandOptions(enum.Enum):
+    QUANTITY = enum.auto() # require a number as an argument
+    OPTIONAL = enum.auto() # make argument optional
+    ALLOW_EQUALS = enum.auto() # allow format "command = argument"
+
+
+class TrackerCommand():
+    MISSING_ARG_MESSAGE = "This command requires an integer as an argument."
+
+    def __init__(self, names, options, func):
+        self.names = names
+        self.needs_quantity = TrackerCommandOptions.QUANTITY in options
+        self.arg_optional = TrackerCommandOptions.OPTIONAL in options
+        self.arg_allow_equals = TrackerCommandOptions.ALLOW_EQUALS in options
+        self.func = func
+
+    def handle(self, args):
+        if not args:
+            if not self.needs_quantity or self.arg_optional:
+                return self.func()
+            else:
+                return TrackerCommand.MISSING_ARG_MESSAGE
+
+        quantity = None
+        if args[0].isnumeric():
+            quantity = int(args[0])
+        else:
+            rolls = roll.get_rolls(" ".join(args), max_qty=1)
+            if rolls:
+                quantity = rolls[0].total
+
+        if quantity:
+            return self.func(quantity)
+        elif self.arg_allow_equals and len(args) >= 2 and args[0] == "=" and args[1].isnumeric():
+            return self.func(int(args[1]))
+        else:
+            return TrackerCommand.MISSING_ARG_MESSAGE            
+
 class Tracker(AbstractTracker):
     def __init__(self, **kwargs):
         super().__init__(
@@ -77,9 +116,61 @@ class Tracker(AbstractTracker):
         )
         self.maximum = kwargs.get("maximum")
         self.minimum = kwargs.get("minimum")
+        self.commands = self.create_default_commands()
 
     def __repr__(self):
         return super().__repr__().replace("Abstract", "", 1)
+
+    def create_default_commands(self):
+        return [
+            TrackerCommand(["reset"], [], self.reset),
+            TrackerCommand(["rest"], [], self.rest),
+            TrackerCommand(["++"], [], lambda: self.add(1)),
+            TrackerCommand(["--"], [], lambda: self.remove(1)),
+            TrackerCommand(
+                ["default"], 
+                [
+                    TrackerCommandOptions.QUANTITY,
+                    TrackerCommandOptions.OPTIONAL,
+                    TrackerCommandOptions.ALLOW_EQUALS
+                ],
+                self.set_default
+            ),
+            TrackerCommand(
+                ["add", "give", "+", "+="],
+                [TrackerCommandOptions.QUANTITY],
+                self.add
+            ),
+            TrackerCommand(
+                ["subtract", "take", "-", "-="],
+                [TrackerCommandOptions.QUANTITY],
+                self.add
+            ),
+            TrackerCommand(
+                ["set", "="],
+                [
+                    TrackerCommandOptions.QUANTITY,
+                    TrackerCommandOptions.ALLOW_EQUALS
+                ],
+                self.set_quantity
+            ),
+            TrackerCommand(
+                ["min", "minimum"],
+                [
+                    TrackerCommandOptions.QUANTITY,
+                    TrackerCommandOptions.ALLOW_EQUALS
+                ],
+                self.set_minimum
+            ),
+            TrackerCommand(
+                ["max", "maximum"],
+                [
+                    TrackerCommandOptions.QUANTITY,
+                    TrackerCommandOptions.ALLOW_EQUALS
+                ],
+                self.set_maximum
+            )
+        ]
 
     def reset(self):
         super().reset()
@@ -128,7 +219,6 @@ class Tracker(AbstractTracker):
         else:
             message += f"Current value: {self.quantity}."
 
-        return message
 
     def toggle_rest_behaviour(self):
         self.reset_on_rest = not self.reset_on_rest
@@ -137,7 +227,10 @@ class Tracker(AbstractTracker):
             f" Now {self.reset_on_rest}."
         )
 
-    def set_default(self, quantity):
+    def set_default(self, quantity=None):
+        if quantity is None:
+            return f"Current default value of {self.name}: {self.default}."
+
         self.default = quantity
         message = f"Set default of {self.name} to {self.default}."
         if (m := self.bounds_check(value=self.default)) :
@@ -162,48 +255,9 @@ class Tracker(AbstractTracker):
         return f"Set minimum of {self.name} to {self.minimum}."
 
     def _handle_command(self, command, args):
-        if command == "reset":
-            return self.reset()
-        elif command == "rest":
-            return self.toggle_rest_behaviour()
-        elif command == "++":
-            return self.add(1)
-        elif command == "--":
-            return self.remove(1)
-        elif command == "default" and not args:
-            return f"Current default value of {self.name}: {self.default}."
-
-        if not args:
-            return f"If command {command} exists, it requires arguments."
-
-        quantity = None
-        if args[0].isnumeric():
-            quantity = int(args[0])
-        else:
-            rolls = roll.get_rolls(" ".join(args), max_qty=1)
-            if rolls:
-                quantity = rolls[0].total
-
-        if quantity is not None:
-            if command in ["add", "give", "+", "+="]:
-                return self.add(quantity)
-            elif command in ["subtract", "take", "-", "-="]:
-                return self.remove(quantity)
-        else:
-            # Allow for t default = 3 as well as t default 3 for these commands.
-            if args[0] == "=" and args[1].isnumeric():
-                quantity = int(args[1])
-            else:
-                return f"If command {command} exists, it requires a quantity."
-
-        if command == "default":
-            return self.set_default(quantity)
-        elif command in ["set", "="]:
-            return self.set_quantity(quantity)
-        elif command in ["max", "maximum"]:
-            return self.set_maximum(quantity)
-        elif command in ["min", "minimum"]:
-            return self.set_minimum(quantity)
+        for c in self.commands:
+            if command in c.names:
+                return c.handle(args)
 
         return f"Command {command} not found."
 
@@ -557,8 +611,8 @@ class HealthCollection(TrackerCollection):
     def __init__(self, **kwargs):
         if kwargs.get("quantity") is None:
             kwargs["quantity"] = {
-                "hp": Tracker("hp", 0, 0, True),
-                "hd": Tracker("hd"),
+                "hp": Tracker(name="hp", reset_on_rest=True),
+                "hd": Tracker(name="hd"),
             }
 
         super().__init__(
