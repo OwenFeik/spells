@@ -69,12 +69,12 @@ class AbstractTracker:
 
 
 class TrackerCommandOptions(enum.Enum):
-    QUANTITY = enum.auto() # require a number as an argument
-    OPTIONAL = enum.auto() # make argument optional
-    ALLOW_EQUALS = enum.auto() # allow format "command = argument"
+    QUANTITY = enum.auto()  # require a number as an argument
+    OPTIONAL = enum.auto()  # make argument optional
+    ALLOW_EQUALS = enum.auto()  # allow format "command = argument"
 
 
-class TrackerCommand():
+class TrackerCommand:
     MISSING_ARG_MESSAGE = "This command requires an integer as an argument."
 
     def __init__(self, names, options, func):
@@ -101,10 +101,16 @@ class TrackerCommand():
 
         if quantity:
             return self.func(quantity)
-        elif self.arg_allow_equals and len(args) >= 2 and args[0] == "=" and args[1].isnumeric():
+        elif (
+            self.arg_allow_equals
+            and len(args) >= 2
+            and args[0] == "="
+            and args[1].isnumeric()
+        ):
             return self.func(int(args[1]))
         else:
-            return TrackerCommand.MISSING_ARG_MESSAGE            
+            return TrackerCommand.MISSING_ARG_MESSAGE
+
 
 class Tracker(AbstractTracker):
     def __init__(self, **kwargs):
@@ -128,48 +134,48 @@ class Tracker(AbstractTracker):
             TrackerCommand(["++"], [], lambda: self.add(1)),
             TrackerCommand(["--"], [], lambda: self.remove(1)),
             TrackerCommand(
-                ["default"], 
+                ["default"],
                 [
                     TrackerCommandOptions.QUANTITY,
                     TrackerCommandOptions.OPTIONAL,
-                    TrackerCommandOptions.ALLOW_EQUALS
+                    TrackerCommandOptions.ALLOW_EQUALS,
                 ],
-                self.set_default
+                self.set_default,
             ),
             TrackerCommand(
                 ["add", "give", "+", "+="],
                 [TrackerCommandOptions.QUANTITY],
-                self.add
+                self.add,
             ),
             TrackerCommand(
                 ["subtract", "take", "-", "-="],
                 [TrackerCommandOptions.QUANTITY],
-                self.add
+                self.add,
             ),
             TrackerCommand(
                 ["set", "="],
                 [
                     TrackerCommandOptions.QUANTITY,
-                    TrackerCommandOptions.ALLOW_EQUALS
+                    TrackerCommandOptions.ALLOW_EQUALS,
                 ],
-                self.set_quantity
+                self.set_quantity,
             ),
             TrackerCommand(
                 ["min", "minimum"],
                 [
                     TrackerCommandOptions.QUANTITY,
-                    TrackerCommandOptions.ALLOW_EQUALS
+                    TrackerCommandOptions.ALLOW_EQUALS,
                 ],
-                self.set_minimum
+                self.set_minimum,
             ),
             TrackerCommand(
                 ["max", "maximum"],
                 [
                     TrackerCommandOptions.QUANTITY,
-                    TrackerCommandOptions.ALLOW_EQUALS
+                    TrackerCommandOptions.ALLOW_EQUALS,
                 ],
-                self.set_maximum
-            )
+                self.set_maximum,
+            ),
         ]
 
     def add_command(self, command):
@@ -239,7 +245,6 @@ class Tracker(AbstractTracker):
             message += m
         else:
             message += f"Current value: {self.quantity}."
-
 
     def toggle_rest_behaviour(self):
         self.reset_on_rest = not self.reset_on_rest
@@ -311,7 +316,7 @@ class CoinTracker(Tracker):
         for c in self.commands:
             if command in c.names:
                 return c.handle(args, context.character)
-        
+
         return f"Command {command} not found."
 
     @staticmethod
@@ -335,6 +340,7 @@ class HitDieTracker(Tracker):
 
     def heal(self):
         pass
+
 
 class TrackerCollection(AbstractTracker):
     def __init__(self, name="", quantity=None, reset_on_rest=False):
