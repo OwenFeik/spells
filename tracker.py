@@ -1,3 +1,4 @@
+from _typeshed import NoneType
 import collections
 import enum
 import re
@@ -293,55 +294,6 @@ class Tracker(AbstractTracker):
         return Tracker(**data)
 
 
-class CoinTracker(Tracker):
-    def __init__(self, name, default=0, quantity=0, reset_on_rest=False):
-        super().__init__(
-            name=name,
-            default=default,
-            quantity=quantity,
-            reset_on_rest=reset_on_rest,
-        )
-        self.add_command_name("subtract", "spend")
-
-    def handle_command(self, context):
-        command, args = self.parse_args(context)
-
-        scrubbed_args = []
-        for arg in args:
-            if (m := re.match(fr"(?P<qty>\d+){self.name}", arg)) :
-                scrubbed_args.append(m.group("qty"))
-            else:
-                scrubbed_args.append(arg)
-
-        for c in self.commands:
-            if command in c.names:
-                return c.handle(args, context.character)
-
-        return f"Command {command} not found."
-
-    @staticmethod
-    def from_json(data):
-        return CoinTracker(**data)
-
-
-class HitDieTracker(Tracker):
-    def __init__(self, name="hd", default=0, quantity=0, reset_on_rest=True):
-        super().__init__(
-            name=name,
-            default=default,
-            quantity=quantity,
-            reset_on_rest=reset_on_rest,
-        )
-        self.add_command(TrackerCommand(["heal"], [], self.heal))
-
-    def rest(self):
-        if not self.reset_on_rest:
-            return
-
-    def heal(self):
-        pass
-
-
 class TrackerCollection(AbstractTracker):
     def __init__(self, name="", quantity=None, reset_on_rest=False):
         super().__init__(
@@ -421,6 +373,9 @@ class TrackerCollection(AbstractTracker):
             self.trackers.values(), self.name, indent + 1
         )
 
+    def get_child(self, name):
+        return self.trackers.get(name)
+
     def to_json(self):
         return {
             "type": self.__class__.__name__,
@@ -435,6 +390,35 @@ class TrackerCollection(AbstractTracker):
             data["quantity"] = collection_from_json(data["quantity"])
         return TrackerCollection(**data)
 
+class CoinTracker(Tracker):
+    def __init__(self, name, default=0, quantity=0, reset_on_rest=False):
+        super().__init__(
+            name=name,
+            default=default,
+            quantity=quantity,
+            reset_on_rest=reset_on_rest,
+        )
+        self.add_command_name("subtract", "spend")
+
+    def handle_command(self, context):
+        command, args = self.parse_args(context)
+
+        scrubbed_args = []
+        for arg in args:
+            if (m := re.match(fr"(?P<qty>\d+){self.name}", arg)) :
+                scrubbed_args.append(m.group("qty"))
+            else:
+                scrubbed_args.append(arg)
+
+        for c in self.commands:
+            if command in c.names:
+                return c.handle(args, context.character)
+
+        return f"Command {command} not found."
+
+    @staticmethod
+    def from_json(data):
+        return CoinTracker(**data)
 
 class CoinCollection(TrackerCollection):
     DENOMINATIONS = ["cp", "sp", "ep", "gp", "pp"]
@@ -640,7 +624,33 @@ class CoinCollection(TrackerCollection):
         return CoinCollection(**data)
 
 
+class HitDieTracker(Tracker):
+    def __init__(self, **kwargs):
+        kwargs["name"] = kwargs.get(
+            "name",
+            HealthCollection.HIT_DIE_TRACKER_NAME
+        )
+        super().__init__(**kwargs)
+        self.add_command(TrackerCommand(["heal"], [], self.heal))
+
+    def get_hp_tracker(self, context):
+        for t in context.character.trackers.values():
+            if isinstance(t, TrackerCollection):
+                if t.get_child(self.name) is self:
+                    return t.get_child(HealthCollection.HIT_POINTS_TRACKER_NAME)
+        return None
+
+    def rest(self):
+        if not self.reset_on_rest:
+            return
+
+    def heal(self):
+        pass
+
 class HealthCollection(TrackerCollection):
+    HIT_DIE_TRACKER_NAME = "hd"
+    HIT_POINTS_TRACKER_NAME = "hp"
+
     def __init__(self, **kwargs):
         if kwargs.get("quantity") is None:
             kwargs["quantity"] = {
