@@ -1,4 +1,3 @@
-from _typeshed import NoneType
 import collections
 import enum
 import re
@@ -9,13 +8,11 @@ import cli
 
 
 class AbstractTracker:
-    def __init__(
-        self, name="", default=None, quantity=None, reset_on_rest=False
-    ):
-        self.name = name
-        self.default = default
-        self.quantity = quantity
-        self.reset_on_rest = reset_on_rest
+    def __init__(self, **kwargs):
+        self.name = kwargs.get("name", "")
+        self.default = kwargs.get("default")
+        self.quantity = kwargs.get("quantity")
+        self.reset_on_rest = kwargs.get("reset_on_rest", False)
 
     def __repr__(self):
         return (
@@ -71,26 +68,35 @@ class AbstractTracker:
 
 class TrackerCommandOptions(enum.Enum):
     QUANTITY = enum.auto()  # require a number as an argument
+    STRING = enum.auto()  # require a string as an argument
     OPTIONAL = enum.auto()  # make argument optional
     ALLOW_EQUALS = enum.auto()  # allow format "command = argument"
 
 
 class TrackerCommand:
-    MISSING_ARG_MESSAGE = "This command requires an integer as an argument."
+    MISSING_ARG_MESSAGE = "This command requires an argument."
 
     def __init__(self, names, options, func):
         self.names = names
+        self.needs_string = TrackerCommandOptions.STRING in options
         self.needs_quantity = TrackerCommandOptions.QUANTITY in options
         self.arg_optional = TrackerCommandOptions.OPTIONAL in options
         self.arg_allow_equals = TrackerCommandOptions.ALLOW_EQUALS in options
         self.func = func
 
+    @property
+    def needs_arg(self):
+        return self.needs_string or self.needs_quantity
+
     def handle(self, args, character=None):
         if not args:
-            if not self.needs_quantity or self.arg_optional:
+            if not self.needs_arg or self.arg_optional:
                 return self.func()
             else:
                 return TrackerCommand.MISSING_ARG_MESSAGE
+
+        if self.needs_string:
+            return self.func(args[0])
 
         quantity = None
         if args[0].isnumeric():
@@ -100,7 +106,7 @@ class TrackerCommand:
             if rolls:
                 quantity = rolls[0].total
 
-        if quantity:
+        if quantity is not None:
             return self.func(quantity)
         elif (
             self.arg_allow_equals
@@ -115,15 +121,12 @@ class TrackerCommand:
 
 class Tracker(AbstractTracker):
     def __init__(self, **kwargs):
-        super().__init__(
-            kwargs.get("name", ""),
-            kwargs.get("default"),
-            kwargs.get("quantity", kwargs.get("default", 0)),
-            kwargs.get("reset_on_rest"),
-        )
+        kwargs["quantity"] = kwargs.get("quantity", 0)
+        super().__init__(**kwargs)
         self.maximum = kwargs.get("maximum")
         self.minimum = kwargs.get("minimum")
         self.commands = self.create_default_commands()
+        self._old_quantities = []  # stack
 
     def __repr__(self):
         return super().__repr__().replace("Abstract", "", 1)
@@ -151,7 +154,7 @@ class Tracker(AbstractTracker):
             TrackerCommand(
                 ["subtract", "take", "-", "-="],
                 [TrackerCommandOptions.QUANTITY],
-                self.add,
+                self.remove,
             ),
             TrackerCommand(
                 ["set", "="],
@@ -165,6 +168,7 @@ class Tracker(AbstractTracker):
                 ["min", "minimum"],
                 [
                     TrackerCommandOptions.QUANTITY,
+                    TrackerCommandOptions.OPTIONAL,
                     TrackerCommandOptions.ALLOW_EQUALS,
                 ],
                 self.set_minimum,
@@ -173,9 +177,13 @@ class Tracker(AbstractTracker):
                 ["max", "maximum"],
                 [
                     TrackerCommandOptions.QUANTITY,
+                    TrackerCommandOptions.OPTIONAL,
                     TrackerCommandOptions.ALLOW_EQUALS,
                 ],
                 self.set_maximum,
+            ),
+            TrackerCommand(
+                ["unset"], [TrackerCommandOptions.STRING], self.unset
             ),
         ]
 
@@ -191,6 +199,11 @@ class Tracker(AbstractTracker):
                 raise ValueError(f"A command with name {new} already exists.")
         target.names.append(new)
 
+    def get_command_names(self, name):
+        for c in self.commands:
+            if name in c.names:
+                return c.names
+
     def remove_command(self, name):
         remove = []
         for c in self.commands:
@@ -200,13 +213,36 @@ class Tracker(AbstractTracker):
         for c in remove:
             self.commands.remove(c)
 
-    def reset(self):
-        super().reset()
+    def start_delta(self):
+        self._old_quantities.append(self.quantity)
 
+    def finish_delta(self, as_string=False):
+        delta = 0
+        if self._old_quantities:
+            delta = self.quantity - self._old_quantities.pop()
+
+        if as_string:
+            if delta != 0:
+                return f" ({'+' if delta > 0 else ''}{delta})"
+            else:
+                return ""
+        else:
+            return delta
+
+    def reset(self):
         if self.default is not None:
-            return f"Reset {self.name} to {self.quantity}."
+            self.start_delta()
+            super().reset()
+            return (
+                f"Reset {self.name} to {self.quantity}"
+                f"{self.finish_delta(True)}."
+            )
         else:
             return f"{self.name} has no default to reset to."
+
+    def rest(self):
+        if self.reset_on_rest:
+            return self.reset()
 
     def bounds_check(self, enforce=True, value=None):
         if value is None:
@@ -216,14 +252,25 @@ class Tracker(AbstractTracker):
 
         if self.maximum is not None and value > self.maximum:
             if enforce:
+                self.start_delta()
                 self.quantity = self.maximum
-                return f"Now at maximum: {self.maximum}."
+                delta = self.finish_delta()
+
+                message = f"Now at maximum: {self.maximum}."
+                if delta:
+                    message += f" Lost {abs(delta)} to overflow."
+                return message
             else:
                 return f"Warning: over maximum of {self.maximum}."
         elif self.minimum is not None and value < self.minimum:
             if enforce:
+                self.start_delta()
                 self.quantity = self.minimum
-                return f"Now at minimum: {self.minimum}."
+                delta = self.finish_delta()
+                message = f"Now at minimum: {self.minimum}."
+                if delta:
+                    message += f" Lost {delta} to underflow."
+                return message
             else:
                 return f"Warning: below minimum of {self.minimum}."
 
@@ -247,6 +294,8 @@ class Tracker(AbstractTracker):
         else:
             message += f"Current value: {self.quantity}."
 
+        return message
+
     def toggle_rest_behaviour(self):
         self.reset_on_rest = not self.reset_on_rest
         return (
@@ -265,21 +314,28 @@ class Tracker(AbstractTracker):
         return message
 
     def set_quantity(self, quantity):
+        self.start_delta()
         self.quantity = quantity
-        message = f"Set {self.name} to {quantity}."
+        message = f"Set {self.name} to {quantity}{self.finish_delta(True)}."
 
         if (m := self.bounds_check(enforce=False)) :
             message += f" {m}"
 
         return message
 
-    def set_maximum(self, quantity):
-        self.maximum = quantity
-        return f"Set maximum of {self.name} to {self.maximum}."
+    def set_maximum(self, quantity=None):
+        if quantity is not None:
+            self.maximum = quantity
+            return f"Set maximum of {self.name} to {self.maximum}."
+        else:
+            return f"Current maximum of {self.name}: {self.maximum}."
 
-    def set_minimum(self, quantity):
-        self.minimum = quantity
-        return f"Set minimum of {self.name} to {self.minimum}."
+    def set_minimum(self, quantity=None):
+        if quantity is not None:
+            self.minimum = quantity
+            return f"Set minimum of {self.name} to {self.minimum}."
+        else:
+            return f"Current minimum of {self.name}: {self.minimum}."
 
     def handle_command(self, context):
         command, args = self.parse_args(context)
@@ -289,19 +345,43 @@ class Tracker(AbstractTracker):
 
         return f"Command {command} not found."
 
+    def unset(self, name):
+        UNSETTABLE = ["default", "maximum", "minimum"]
+
+        command_names = self.get_command_names(name)
+        if command_names is None:
+            return (
+                "Only "
+                + ", ".join(UNSETTABLE[:-1])
+                + f" and {UNSETTABLE[-1]} can be unset."
+            )
+
+        for n in command_names:
+            if n in UNSETTABLE:
+                setattr(self, n, None)
+                return f"Removed {n} for {self.name}."
+        return f"{name} cannot be unset."
+
+    def to_json(self):
+        return {
+            **super().to_json(),
+            "maximum": self.maximum,
+            "minimum": self.minimum,
+        }
+
     @staticmethod
     def from_json(data):
         return Tracker(**data)
 
 
 class TrackerCollection(AbstractTracker):
-    def __init__(self, name="", quantity=None, reset_on_rest=False):
-        super().__init__(
-            name,
-            default={},
-            quantity={} if quantity is None else quantity,
-            reset_on_rest=reset_on_rest,
-        )
+    def __init__(self, **kwargs):
+        if kwargs.get("quantity") is None:
+            kwargs["quantity"] = {}
+        if kwargs.get("default") is None:
+            kwargs["default"] = {}
+
+        super().__init__(**kwargs)
         self.trackers = self.quantity
 
     def __repr__(self):
@@ -390,14 +470,11 @@ class TrackerCollection(AbstractTracker):
             data["quantity"] = collection_from_json(data["quantity"])
         return TrackerCollection(**data)
 
+
 class CoinTracker(Tracker):
-    def __init__(self, name, default=0, quantity=0, reset_on_rest=False):
-        super().__init__(
-            name=name,
-            default=default,
-            quantity=quantity,
-            reset_on_rest=reset_on_rest,
-        )
+    def __init__(self, **kwargs):
+        kwargs["minimum"] = kwargs.get("minimum", 0)
+        super().__init__(**kwargs)
         self.add_command_name("subtract", "spend")
 
     def handle_command(self, context):
@@ -420,6 +497,7 @@ class CoinTracker(Tracker):
     def from_json(data):
         return CoinTracker(**data)
 
+
 class CoinCollection(TrackerCollection):
     DENOMINATIONS = ["cp", "sp", "ep", "gp", "pp"]
     DENOMINATION_MAPPING = {
@@ -430,7 +508,7 @@ class CoinCollection(TrackerCollection):
         "pp": 1000,
     }
 
-    def __init__(self, name="", **kwargs):
+    def __init__(self, **kwargs):
         self.denoms = CoinCollection.DENOMINATIONS[:]
         if not kwargs.get("electrum_enabled"):
             self.denoms.remove("ep")
@@ -438,8 +516,10 @@ class CoinCollection(TrackerCollection):
         if kwargs.get("quantity") is None:
             kwargs["quantity"] = collections.OrderedDict()
             for c in self.denoms:
-                kwargs["quantity"][c] = CoinTracker(c)
-        super().__init__(name, kwargs.get("quantity"), False)
+                kwargs["quantity"][c] = CoinTracker(name=c)
+
+        kwargs["reset_on_rest"] = False
+        super().__init__(**kwargs)
 
         self.set_regex()
 
@@ -547,7 +627,7 @@ class CoinCollection(TrackerCollection):
             self.denoms.insert(2, "ep")
             self.set_regex()
 
-            self.trackers["ep"] = CoinTracker("ep")
+            self.trackers["ep"] = CoinTracker(name="ep")
             self.trackers.move_to_end("gp")
             self.trackers.move_to_end("pp")
 
@@ -627,8 +707,7 @@ class CoinCollection(TrackerCollection):
 class HitDieTracker(Tracker):
     def __init__(self, **kwargs):
         kwargs["name"] = kwargs.get(
-            "name",
-            HealthCollection.HIT_DIE_TRACKER_NAME
+            "name", HealthCollection.HIT_DIE_TRACKER_NAME
         )
         super().__init__(**kwargs)
         self.add_command(TrackerCommand(["heal"], [], self.heal))
@@ -647,6 +726,7 @@ class HitDieTracker(Tracker):
     def heal(self):
         pass
 
+
 class HealthCollection(TrackerCollection):
     HIT_DIE_TRACKER_NAME = "hd"
     HIT_POINTS_TRACKER_NAME = "hp"
@@ -658,11 +738,7 @@ class HealthCollection(TrackerCollection):
                 "hd": Tracker(name="hd"),
             }
 
-        super().__init__(
-            name=kwargs.get("name", "health"),
-            quantity=kwargs.get("quantity"),
-            reset_on_rest=True,
-        )
+        super().__init__(**kwargs)
 
 
 def from_json(data):
@@ -688,6 +764,6 @@ def print_tracker_iterable(trackers):
 
 
 tracker_collection_presets = {
-    "coins": lambda: CoinCollection("coins"),
-    "wealth": lambda: CoinCollection("wealth"),
+    "coins": lambda: CoinCollection(name="coins"),
+    "wealth": lambda: CoinCollection(name="wealth"),
 }

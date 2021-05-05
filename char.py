@@ -174,7 +174,8 @@ class Char:
                 data["trackers"] = {
                     t["name"]: tracker.from_json(t) for t in data["trackers"]
                 }
-        except:
+        except Exception as e:
+            print(e)
             print(
                 "Failed to parse tracker information."
                 " Defaulting to empty collection."
