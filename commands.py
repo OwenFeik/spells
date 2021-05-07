@@ -112,12 +112,11 @@ def common_tracker_handling(context):
         print(f'Name "{name}" is a command and thus reserved.')
     elif name and name.isnumeric():
         print("Numbers are used to select options and thus reserved.")
-    elif name in context.character.trackers:
+    elif (t := context.get_tracker(name)) :
         if context.arg_count() > 1:
-            t = context.character.trackers[name]
             print(t.handle_command(context))
         else:
-            print(context.character.trackers[name])
+            print(t)
     elif context.arg_count() == 0:
         context.character.print_trackers()
     else:
@@ -129,13 +128,18 @@ def tracker_access(context):
     if name is None:
         return
 
-    if re.match(r"\w+\.\w+", name):
-        c_name, name = name.split(".")
-        if c_name in context.character.trackers:
-            tc = context.character.trackers[c_name]
-        else:
-            print(f'No collection "{c_name}".')
+    if tracker.TrackerCollection.TRACKER_ACCESS_OPERATOR in name:
+        names = name.split(tracker.TrackerCollection.TRACKER_ACCESS_OPERATOR)
+        tc = context.get_tracker(names=names[:-1])
+        tc_name = ".".join(names[:-1])
+
+        if tc is None:
+            print(f'No collection "{tc_name}".')
             return
+        elif not isinstance(tc, tracker.TrackerCollection):
+            print(f"{tc_name} is not a collection.")
+            return
+        name = names[-1]
     else:
         tc = None
 
@@ -156,8 +160,7 @@ def tracker_access(context):
 
     if tc is not None:
         tc.add_tracker(t)
-        tc.add_child_to_char(context.character, t)
-        print(f"Created tracker {tc.name}.{t.name}.")
+        print(f"Created tracker {tc_name}.{t.name}.")
     else:
         t.add_to_char(context.character)
         print(f"Created tracker {t.name}.")
@@ -178,6 +181,7 @@ def tracker_collection(context):
             )
         else:
             tracker.TrackerCollection(name=name).add_to_char(context.character)
+        print(f"Created tracker collection {name}.")
     else:
         print('Usage: "tc <name>".')
 
@@ -193,11 +197,30 @@ def deltracker(context):
         return
 
     try:
-        if "." in name:
-            tc, t = name.split(".")
-            context.character.trackers[tc].delete_child(t)
-        del context.character.trackers[name]
-        print(f'Tracker "{name}" deleted.')
+        names = tracker.TrackerCollection.expand_name(name)
+
+        if len(names) == 1:
+            try:
+                context.character.trackers.delete_child(names[0])
+            except KeyError:
+                print(
+                    f"Couldn't find {name}. If it's part of a collection,"
+                    " remember to specify which one through "
+                    '"dt <parent>.<child>"'
+                )
+        else:
+            parent = context.get_tracker(names=names[:-1])
+            if parent:
+                parent.delete_child(names[-1])
+                print(f'Tracker "{name}" deleted.')
+            else:
+                print(
+                    "Couldn't find the tracker "
+                    + tracker.TrackerCollection.TRACKER_ACCESS_OPERATOR.join(
+                        names[:-1]
+                    )
+                    + " to delete {name} from."
+                )
     except KeyError:
         print(f'Tracker "{name}" does not exist.')
 

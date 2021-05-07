@@ -5,6 +5,7 @@ import re
 import roll
 
 import cli
+import constants
 
 
 class AbstractTracker:
@@ -47,7 +48,7 @@ class AbstractTracker:
             self.reset()
 
     def add_to_char(self, char):
-        char.trackers[self.name] = self
+        char.trackers.add_tracker(self)
 
     def to_string(self, indent=0):
         return "\t" * indent + f"{self.name}: {self.quantity}"
@@ -69,7 +70,9 @@ class AbstractTracker:
 class TrackerCommandOptions(enum.Enum):
     QUANTITY = enum.auto()  # require a number as an argument
     STRING = enum.auto()  # require a string as an argument
+    TRACKER = enum.auto()  # require a tracker as an argument
     OPTIONAL = enum.auto()  # make argument optional
+    CHARACTER = enum.auto()  # require the active character as an argument
     ALLOW_EQUALS = enum.auto()  # allow format "command = argument"
 
 
@@ -80,6 +83,7 @@ class TrackerCommand:
         self.names = names
         self.needs_string = TrackerCommandOptions.STRING in options
         self.needs_quantity = TrackerCommandOptions.QUANTITY in options
+        self.needs_character = TrackerCommandOptions.CHARACTER in options
         self.arg_optional = TrackerCommandOptions.OPTIONAL in options
         self.arg_allow_equals = TrackerCommandOptions.ALLOW_EQUALS in options
         self.func = func
@@ -88,35 +92,39 @@ class TrackerCommand:
     def needs_arg(self):
         return self.needs_string or self.needs_quantity
 
-    def handle(self, args, character=None):
-        if not args:
-            if not self.needs_arg or self.arg_optional:
-                return self.func()
-            else:
-                return TrackerCommand.MISSING_ARG_MESSAGE
+    def call(self, quantity=None, string=None, character=None):
+        args = ()
 
+        if self.needs_quantity:
+            args = args + (quantity,)
         if self.needs_string:
-            return self.func(args[0])
+            args = args + (string,)
+        if self.needs_character:
+            args = args + (character,)
 
-        quantity = None
-        if args[0].isnumeric():
+        return self.func(*args)
+
+    def handle(self, args, character=None):
+        quantity = string = None
+        if not args and (not self.needs_arg or self.arg_optional):
+            pass
+        elif self.needs_string:
+            string = args[0]
+        elif args[0].isnumeric():
             quantity = int(args[0])
-        else:
-            rolls = roll.get_rolls(" ".join(args), max_qty=1)
-            if rolls:
-                quantity = rolls[0].total
-
-        if quantity is not None:
-            return self.func(quantity)
+        elif (rolls := roll.get_rolls(" ".join(args), max_qty=1)) :
+            quantity = rolls[0].total
         elif (
             self.arg_allow_equals
             and len(args) >= 2
             and args[0] == "="
             and args[1].isnumeric()
         ):
-            return self.func(int(args[1]))
+            quantity = int(args[1])
         else:
             return TrackerCommand.MISSING_ARG_MESSAGE
+
+        return self.call(quantity=quantity, string=string, character=character)
 
 
 class Tracker(AbstractTracker):
@@ -375,6 +383,8 @@ class Tracker(AbstractTracker):
 
 
 class TrackerCollection(AbstractTracker):
+    TRACKER_ACCESS_OPERATOR = "."
+
     def __init__(self, **kwargs):
         if kwargs.get("quantity") is None:
             kwargs["quantity"] = {}
@@ -388,28 +398,38 @@ class TrackerCollection(AbstractTracker):
         return f"<TrackerCollection name={self.name} trackers={self.quantity}>"
 
     def _handle_command(self, context, command, t, args):
-        if command == "add":
-            self.trackers[t.name] = t
-            del context.character.trackers[t.name]
-            self.add_child_to_char(context.character, t)
+        if t is self:
+            return f"{self.name} can't perform operations on itself."
+        elif command == "add":
+            self.add_tracker(t)
+            context.character.trackers.delete_child(t.name)
             return f"Added {t.name} to {self.name}."
         elif command == "remove":
-            context.character.trackers[t.name] = t
-            del self.trackers[t.name]
-            self.remove_child_from_char(context.character, t)
+            context.character.trackers.add_tracker(t)
+            self.delete_child(t.name)
             return f"Removed {t.name} from {self.name}."
-        raise ValueError(f'Command "{command}" not found.')
+        return f"Command {command} doesn't exist."
 
-    def get_tracker_from_name(self, context, name):
-        if name not in context.character.trackers:
-            if name not in self.trackers:
-                raise ValueError(f"No tracker {name} found.")
-            else:
-                t = self.trackers[name]
-        else:
-            t = context.character.trackers[name]
+    def get(self, name=None, names=None):
+        if not names and name:
+            names = TrackerCollection.expand_name(name)
 
-        return t
+        if not names:
+            return None
+
+        if (t := self.trackers.get(names[0])) :
+            if len(names) == 1:
+                return t
+            elif isinstance(t, TrackerCollection):
+                return t.get(names=names[1:])
+
+        return None
+
+    def get_parent(self, name):
+        names = TrackerCollection.expand_name(name)[:-1]
+        if len(names) == 0:
+            return self
+        return self.get(names=names)
 
     def handle_command(self, context):
         command, args = self.parse_args(context)
@@ -417,30 +437,20 @@ class TrackerCollection(AbstractTracker):
         if len(args) == 0:
             return f'If command "{command}" exists, it requires a \
                 tracker as an argument.'
-        try:
-            return self._handle_command(
-                context,
-                command,
-                self.get_tracker_from_name(context, args[0]),
-                args[1:] if len(args) > 1 else [],
-            )
-        except ValueError as e:
-            return str(e)
+
+        return self._handle_command(
+            context,
+            command,
+            context.get_tracker(args[0]),
+            args[1:] if len(args) > 1 else [],
+        )
 
     def rest(self):
         for t in self.trackers.values():
             t.rest()
 
-    def add_child_to_char(self, char, child):
-        char.trackers[f"{self.name}.{child.name}"] = child
-
-    def remove_child_from_char(self, char, child):
-        del char.trackers[f"{self.name}.{child.name}"]
-
     def add_to_char(self, char):
-        char.trackers[self.name] = self
-        for t in self.trackers.values():
-            self.add_child_to_char(char, t)
+        char.trackers.add_tracker(self)
 
     def add_tracker(self, child):
         self.trackers[child.name] = child
@@ -469,6 +479,18 @@ class TrackerCollection(AbstractTracker):
         if "quantity" in data:
             data["quantity"] = collection_from_json(data["quantity"])
         return TrackerCollection(**data)
+
+    @staticmethod
+    def expand_name(name):
+        return name.split(TrackerCollection.TRACKER_ACCESS_OPERATOR)
+
+    @staticmethod
+    def get_root_name(name):
+        return TrackerCollection.expand_name(name)[0]
+
+    @staticmethod
+    def get_leaf_name(name):
+        return TrackerCollection.expand_name(name)[-1]
 
 
 class CoinTracker(Tracker):
@@ -669,6 +691,8 @@ class CoinCollection(TrackerCollection):
             )
         elif command in ["spend", "-", "-="]:
             return self.spend_currency(quantity, currency)
+        else:
+            return f"Command {command} does not exist."
 
     def to_json(self):
         return {
@@ -705,40 +729,143 @@ class CoinCollection(TrackerCollection):
 
 
 class HitDieTracker(Tracker):
-    def __init__(self, **kwargs):
-        kwargs["name"] = kwargs.get(
-            "name", HealthCollection.HIT_DIE_TRACKER_NAME
-        )
-        super().__init__(**kwargs)
-        self.add_command(TrackerCommand(["heal"], [], self.heal))
+    def __init__(self, hp_tracker, **kwargs):
+        for kw, arg in [
+            ("minimum", 0),
+            ("maximum", 0),
+            ("reset_on_rest", True),
+        ]:
+            kwargs[kw] = kwargs.get(kw, arg)
 
-    def get_hp_tracker(self, context):
-        for t in context.character.trackers.values():
-            if isinstance(t, TrackerCollection):
-                if t.get_child(self.name) is self:
-                    return t.get_child(HealthCollection.HIT_POINTS_TRACKER_NAME)
-        return None
+        super().__init__(**kwargs)
+        self.add_command(
+            TrackerCommand(
+                ["heal"], [TrackerCommandOptions.CHARACTER], self.heal
+            )
+        )
+        self.hp = hp_tracker
+        self.die_size = kwargs.get("die_size")
 
     def rest(self):
         if not self.reset_on_rest:
             return
 
-    def heal(self):
-        pass
+    def heal(self, character):
+        if character.stats:
+            mod = character.stats.get_mod("con")
+        else:
+            mod = cli.get_integer(
+                f"{character.name} doesn't have stats."
+                " What is their constitution modifier?"
+            )
+
+        self.start_delta()
+        self.hp.start_delta()
+        while self.quantity and self.hp.quantity < self.hp.maximum:
+            self.quantity -= 1
+            self.hp.add(roll.get_rolls(f"d{self.die_size} + {mod}")[0].total)
+
+        return (
+            f"Used {self.finish_delta()} {self.name} to heal for"
+            f" {self.hp.finish_delta()} hit points. Now at {self.hp.quantity}"
+            " hit points."
+        )
+
+    def to_json(self):
+        return {**super().to_json(), "die_size": self.die_size}
+
+    @staticmethod
+    def from_json():
+        raise TypeError(
+            "Hit die tracker cannot be instantiated without health tracker."
+        )
+
+
+class HitDieCollection(TrackerCollection):
+    def __init__(self, hp_tracker, **kwargs):
+        super().__init__(**kwargs)
+        self.hp_tracker = hp_tracker
+
+    def handle_command(self):
+        raise NotImplementedError()
+
+    def get_tracker_from_die_size(self, size, create=True):
+        name = f"d{size}"
+        t = self.trackers.get(name)
+        if t is None:
+            t = HitDieTracker(self.hp_tracker, name=name, die_size=size)
+            self.add_tracker(t)
+            return t
+
+    def set_up_hd(self, char):
+        if not self.quantity:
+            for k in char.klasses:
+                size = k.get("hit_die")
+                if size is None:
+                    size = constants.KLASSE_HIT_DIE.get(
+                        k["name"],
+                        cli.get_choice(
+                            f"Which hit die does the class {k['name']} use?",
+                            [f"d{s}" for s in constants.HIT_DIE_SIZES],
+                            constants.HIT_DIE_SIZES,
+                        ),
+                    )
+                    k["hit_die"] = size
+
+                t = self.get_tracker_from_die_size(size)
+                t.maximum += k["level"]
+                t.quantity = t.maximum
 
 
 class HealthCollection(TrackerCollection):
-    HIT_DIE_TRACKER_NAME = "hd"
+    HIT_DIE_COLLECTION_NAME = "hd"
     HIT_POINTS_TRACKER_NAME = "hp"
 
     def __init__(self, **kwargs):
-        if kwargs.get("quantity") is None:
-            kwargs["quantity"] = {
-                "hp": Tracker(name="hp", reset_on_rest=True),
-                "hd": Tracker(name="hd"),
-            }
-
+        kwargs["quantity"] = kwargs.get(
+            "quantity", HealthCollection.default_quantity()
+        )
         super().__init__(**kwargs)
+        self.hp = self.trackers[HealthCollection.HIT_POINTS_TRACKER_NAME]
+        self.hd = self.trackers[HealthCollection.HIT_DIE_COLLECTION_NAME]
+
+    def handle_command(self, context):
+        raise NotImplementedError()
+
+    def add_to_char(self, char):
+        super().add_to_char(char)
+        self.hd.set_up_hd(char)
+
+    @staticmethod
+    def default_quantity():
+        hp = Tracker(
+            name=HealthCollection.HIT_POINTS_TRACKER_NAME,
+            reset_on_rest=True,
+        )
+        return {
+            HealthCollection.HIT_POINTS_TRACKER_NAME: hp,
+            HealthCollection.HIT_DIE_COLLECTION_NAME: HitDieCollection(
+                hp, name=HealthCollection.HIT_DIE_COLLECTION_NAME
+            ),
+        }
+
+    @staticmethod
+    def from_json(data):
+        trackers = data["quantity"]
+        hp = from_json(trackers[HealthCollection.HIT_POINTS_TRACKER_NAME])
+        hd_data = trackers[HealthCollection.HIT_DIE_COLLECTION_NAME]
+        hd_quantity = {
+            t: HitDieTracker(hp, **hd_data["quantity"][t])
+            for t in hd_data["quantity"]
+        }
+        hd_data["quantity"] = hd_quantity
+        hd = HitDieCollection(hp, **hd_data)
+        data["quantity"] = {
+            HealthCollection.HIT_POINTS_TRACKER_NAME: hp,
+            HealthCollection.HIT_DIE_COLLECTION_NAME: hd,
+        }
+
+        return HealthCollection(**data)
 
 
 def from_json(data):
@@ -766,4 +893,5 @@ def print_tracker_iterable(trackers):
 tracker_collection_presets = {
     "coins": lambda: CoinCollection(name="coins"),
     "wealth": lambda: CoinCollection(name="wealth"),
+    "health": lambda: HealthCollection(name="health"),
 }

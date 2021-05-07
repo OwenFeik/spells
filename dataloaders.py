@@ -192,7 +192,7 @@ def ensure_module_installed(module):
 
 def load_orcbrew(path, sb):
     ensure_module_installed("edn_format")
-    import edn_format
+    import edn_format  # pylint: disable=import-error
 
     try:
         with open(path, "rb") as f:

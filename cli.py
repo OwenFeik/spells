@@ -4,6 +4,9 @@ import dataloaders
 import utilities
 
 
+PS = "> "
+
+
 def print_spell(spell, width=None, print_classes=True, options=True):
     if width is None:
         width = get_width()
@@ -132,7 +135,7 @@ def print_chars():
 
 
 def print_list(title, items, afterword=""):
-    print(f"\n{title}:")
+    print(f"\n{title}{':' if title[-1].isalpha() else ''}")
 
     for i, item in enumerate(items):
         print(f"\t[{i + 1}] {item}")
@@ -146,7 +149,7 @@ def get_input(prompt, split=False, default=None):
     p = prompt
     if default is not None:
         p += f" (default {default})"
-    p += " > "
+    p += f" {PS}"
 
     string = input(p).strip()
 
@@ -156,32 +159,38 @@ def get_input(prompt, split=False, default=None):
 
 
 def get_decision(prompt, default=True):
-    p = f"{prompt} ({'Y' if default else 'y'}/{'n' if default else 'N'}) > "
+    p = f"{prompt} ({'Y' if default else 'y'}/{'n' if default else 'N'}) {PS}"
     resp = input(p).strip().lower()
     return resp == "y" or default and resp == ""
 
 
-def get_choice(prompt, items):
+def get_choice(prompt, items, labels_for=None):
     print_list(prompt, items)
 
-    choice = input("> ")
+    choice = input(PS)
     while (
         not (choice.isnumeric() and int(choice) <= len(items))
         and not choice in items
     ):
-        choice = input("Please enter the number of an item from the options > ")
+        choice = input(
+            f"Please enter the number of an item from the options {PS}"
+        )
 
     if choice.isnumeric() and (i := int(choice) - 1) < len(items):
-        return items[i]
+        pass
     elif choice in items:
-        return choice
+        i = items.index(choice)
+
+    if labels_for:
+        return labels_for[i]
+    return items[i]
 
 
 def get_integer(prompt, default=None):
     p = f"{prompt} (number"
     if default is not None:
         p += f", default {default}"
-    p += ") > "
+    p += f") {PS}"
 
     while not ((v := input(p)).isnumeric() or (v := default) is not None):
         print("Please enter a number.")

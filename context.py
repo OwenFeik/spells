@@ -6,6 +6,7 @@ import char
 import cli
 import commands
 import dataloaders
+import tracker
 import utilities
 
 
@@ -28,7 +29,7 @@ class Context:
             if string:
                 self.raw_text = string.strip()
             else:
-                self.raw_text = input(f"{message}> ").strip()
+                self.raw_text = input(f"{message}{cli.PS}").strip()
             self.arg_text = self.raw_text.replace(",", "")
             self.command, *self.args = self.arg_text.split()
             self.arg_text = self.arg_text.replace(self.command, "", 1).strip()
@@ -106,6 +107,38 @@ class Context:
         self.character = char
         self.save_file = ""
 
+    # breadth first search of tracker tree to find tracker with name
+    def get_tracker(self, name=None, root=None, names=None):
+        if not self.character_check(True):
+            return None
+
+        if names is None:
+            if name:
+                names = tracker.TrackerCollection.expand_name(name)
+            else:
+                return None
+
+        try:
+            target = names[-1]
+            current = names[0]
+        except IndexError:
+            return None
+
+        to_visit = [root if root else self.character.trackers]
+        while to_visit:
+            for tc in to_visit[:]:
+                to_visit.remove(tc)
+                if current in tc.trackers:
+                    if current == target:
+                        return tc.trackers[current]
+                    else:
+                        return self.get_tracker(root=tc, names=names[1:])
+
+                for t in tc.trackers.values():
+                    if isinstance(t, tracker.TrackerCollection):
+                        to_visit.append(t)
+        return None
+
     def spellbook_check(self):
         return True if self.spellbook else False
 
@@ -132,12 +165,13 @@ class Context:
             if self.command in commands.mapping:
                 commands.mapping[self.command](self)
                 return
-            elif self.character and self.command in self.character.trackers:
+            elif self.character and (
+                t := self.character.trackers.get(self.command)
+            ):
                 if self.args:
-                    t = self.character.trackers[self.command]
                     print(t.handle_command(self))
                 else:
-                    print(self.character.trackers[self.command])
+                    print(t)
                 return
 
             rolls = roll.get_rolls(self.raw_text)

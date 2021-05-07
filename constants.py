@@ -41,6 +41,24 @@ CASTER_TYPES = {
     "full": 1,
 }
 
+HIT_DIE_SIZES = [4, 6, 8, 10, 12, 20]
+
+KLASSE_HIT_DIE = {
+    "artificer": 8,
+    "barbarian": 12,
+    "bard": 8,
+    "cleric": 8,
+    "druid": 8,
+    "fighter": 10,
+    "monk": 8,
+    "paladin": 10,
+    "ranger": 10,
+    "rogue": 8,
+    "sorcerer": 6,
+    "warlock": 8,
+    "wizard": 6,
+}
+
 DEFAULT_CONFIG = {
     "print_spell_classes": True,
     "print_spell_rolls": True,

@@ -7,6 +7,8 @@ import roll
 
 
 class Char:
+    TRACKER_COLLECTION_NAME = "Trackers"
+
     def __init__(self, **kwargs):
         self.name = kwargs.get("name", "temp")
         self.klasses = kwargs.get("classes", [])
@@ -26,16 +28,10 @@ class Char:
         else:
             self.prepared = []
 
-        self.trackers = kwargs.get("trackers", {})
-        if self.trackers:
-            # Tracker collections add shortcuts to their children
-            for tc in [
-                t
-                for t in self.trackers.values()
-                if isinstance(t, tracker.TrackerCollection)
-            ]:
-                tc.add_to_char(self)
-
+        self.trackers = kwargs.get(
+            "trackers",
+            tracker.TrackerCollection(name=Char.TRACKER_COLLECTION_NAME),
+        )
         self.stats = kwargs.get("stats")
 
     def __str__(self):
@@ -67,13 +63,7 @@ class Char:
         print(out + "\n")
 
     def print_trackers(self):
-        not_collected = []
-
-        for t in self.trackers:
-            if not "." in t:
-                not_collected.append(self.trackers[t])
-
-        tracker.print_tracker_iterable(not_collected)
+        print(self.trackers)
 
     def long_rest(self):
         self.spell_slots_used = [0] * 9
@@ -159,11 +149,7 @@ class Char:
             "classes": self.klasses,
             "spell_slots_used": self.spell_slots_used,
             "prepared": [s.name for s in self.prepared],
-            "trackers": [
-                self.trackers[k].to_json()
-                for k in self.trackers
-                if not "." in k
-            ],
+            "trackers": self.trackers.to_json(),
             "stats": self.stats.to_json() if self.stats is not None else None,
         }
 
@@ -171,13 +157,23 @@ class Char:
     def from_json(data):
         try:
             if "trackers" in data:
-                data["trackers"] = {
-                    t["name"]: tracker.from_json(t) for t in data["trackers"]
-                }
+                # Older versions used a list instead of a TrackerCollection to
+                # store trackers. Here we adapt a list to a TrackerCollection
+                # instance.
+                if isinstance(data["trackers"], list):
+                    trackers = {t["name"]: t for t in data["trackers"]}
+                    data["trackers"] = tracker.from_json(
+                        {
+                            "type": "TrackerCollection",
+                            "name": Char.TRACKER_COLLECTION_NAME,
+                            "quantity": trackers,
+                        }
+                    )
+                else:
+                    data["trackers"] = tracker.from_json(data["trackers"])
         except Exception as e:
-            print(e)
             print(
-                "Failed to parse tracker information."
+                f"Failed to parse tracker information (error: {e})."
                 " Defaulting to empty collection."
             )
             del data["trackers"]
@@ -192,60 +188,70 @@ class Char:
         return Char(**data)
 
     @staticmethod
-    def from_wizard():
-        data = {
-            "name": cli.get_input("What is you character's name?"),
-            "classes": [],
-        }
+    def get_klasse_detail(name, level):
+        CASTER_TYPE_NAMES = ["non", "half", "full"]
+        if (caster_type := constants.CASTER_TYPES.get(name)) is None:
+            caster_type = constants.CASTER_TYPES[
+                cli.get_choice(
+                    f"Class {name} not found. What type of caster is it?",
+                    CASTER_TYPE_NAMES,
+                )
+            ]
 
-        classes_done = False
-        prompt = (
-            "Enter your character's classes and levels:"
-            " <class> <level> <class> <level>"
+        if (hit_die := constants.KLASSE_HIT_DIE.get(name)) is None:
+            hit_die = cli.get_choice(
+                f"What hit die does class {name} use?",
+                [f"d{s}" for s in constants.HIT_DIE_SIZES],
+                constants.HIT_DIE_SIZES,
+            )
+
+        if cli.get_decision(
+            f"Confirm class {name} (d{hit_die}, "
+            + CASTER_TYPE_NAMES[int(2 * caster_type)]
+            + " caster)"
+        ):
+            return {
+                "name": name,
+                "level": level,
+                "caster": caster_type,
+                "hit_die": hit_die,
+            }
+        return None
+
+    @staticmethod
+    def klasses_wizard():
+        prompt = "Enter your character's classes and levels:" " <class> <level>"
+        PROMPT_DETAILED = (
+            "Enter the character's classes and levels"
+            ' e.g. "Cleric 1 wizard 2"'
         )
-        while not classes_done:
+
+        klasses = []
+
+        while True:
             inpt = cli.get_input(prompt, True)
             if len(inpt) % 2 == 0 and len(inpt) != 0:
                 for i in range(0, len(inpt), 2):
-                    klasse = inpt[i].lower()
-                    if klasse not in constants.CASTER_TYPES:
-                        caster_type = cli.get_choice(
-                            f"Class {klasse} not found."
-                            "What type of caster is it?",
-                            ["full", "half", "non"],
+                    if inpt[i + 1].isnumeric() and (
+                        klasse := Char.get_klasse_detail(
+                            inpt[i].lower(), int(inpt[i + 1])
                         )
-                        if not cli.get_decision(
-                            f"Confirm class {klasse} ({caster_type} caster)"
-                        ):
-                            prompt = (
-                                "Enter your character's classes and"
-                                " levels: <class> <level> <class> <level> "
-                            )
-                            break
+                    ):
+                        klasses.append(klasse)
                     else:
-                        caster_type = klasse
-
-                    if inpt[i + 1].isnumeric():
-                        data["classes"].append(
-                            {
-                                "name": inpt[i],
-                                "level": int(inpt[i + 1]),
-                                "caster": constants.CASTER_TYPES[caster_type],
-                            }
-                        )
-                    else:
-                        prompt = (
-                            "Enter the character's classes and levels:"
-                            ' e.g. "Cleric 1 wizard 2"'
-                        )
+                        prompt = PROMPT_DETAILED
+                        break
                 else:
-                    classes_done = True
-
+                    return klasses
             else:
-                prompt = (
-                    "Enter the characters classes and levels:"
-                    ' e.g. "Cleric 1 wizard 2" > '
-                )
+                prompt = PROMPT_DETAILED
+
+    @staticmethod
+    def from_wizard():
+        data = {
+            "name": cli.get_input("What is you character's name?"),
+            "classes": Char.klasses_wizard(),
+        }
 
         if cli.get_decision("Create stats for this character?"):
             data["stats"] = Stats.from_wizard()
@@ -264,6 +270,9 @@ class Stats:
 
     def __str__(self):
         return self.indented_string()
+
+    def get_mod(self, mod_name):
+        return (getattr(self, mod_name.lower()) - 10) // 2
 
     def indented_string(self, title="Stats"):
         string = f"{title}:\n\t"
