@@ -274,12 +274,19 @@ class Stats:
     def get_mod(self, mod_name):
         return (getattr(self, mod_name.lower()) - 10) // 2
 
+    def set_stat(self, stat, value):
+        setattr(self, stat.lower(), value)
+
     def indented_string(self, title="Stats"):
         string = f"{title}:\n\t"
         string += "\n\t".join(
             f"{s.upper()}: {getattr(self, s)}" for s in Stats.DND_STATS
         )
         return string
+
+    def update_stat_wizard(self):
+        self.set_stat(cli.get_choice("Update which stat?", [s.upper() for s in Stats.DND_STATS]), cli.get_integer("New score", 10))
+        
 
     def to_json(self):
         return {s: getattr(self, s) for s in Stats.DND_STATS}

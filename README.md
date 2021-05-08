@@ -105,6 +105,8 @@ the ability to track spell use and use trackers:
 * ```rest``` : Reset used spell slots, as well as any trackers configured to
 reset on rest.
 * ```rename <name>``` : Change the name of the character to the supplied name.
+* ```stats``` : add stats to the character, or view the character's stats. Use
+```stats update``` to update the value of a stat.
 
 ### Using Trackers
 
@@ -243,7 +245,8 @@ Rolls: 3, 3, 5, 6, 4, 6, 1, 6   Total: 34
 Rolls: 5, 5, 5, 6, 4, 6, 6, 6   Total: 43 (+9)
 ```
 
-The format to is ```rr <n>``` where ```n``` is the number of die to reroll.
+The format to reroll is ```rr <n>``` where ```n``` is the number of die to
+reroll.
 
 ### Other
 

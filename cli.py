@@ -195,4 +195,4 @@ def get_integer(prompt, default=None):
     while not ((v := input(p)).isnumeric() or (v := default) is not None):
         print("Please enter a number.")
 
-    return v
+    return int(v)

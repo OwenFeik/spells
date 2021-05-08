@@ -399,13 +399,16 @@ def stats(context):
         ):
             context.character.stats = char.Stats.from_wizard()
 
-    print(
-        f"\n"
-        + context.character.stats.indented_string(
-            context.character.name + "'s stats"
+    if context.arg_count() and context.get_arg(0) == "update":
+        context.character.stats.update_stat_wizard()
+    else:
+        print(
+            f"\n"
+            + context.character.stats.indented_string(
+                context.character.name + "'s stats"
+            )
+            + "\n"
         )
-        + "\n"
-    )
 
 
 mapping = {
