@@ -105,8 +105,10 @@ the ability to track spell use and use trackers:
 * ```rest``` : Reset used spell slots, as well as any trackers configured to
 reset on rest.
 * ```rename <name>``` : Change the name of the character to the supplied name.
-* ```stats``` : add stats to the character, or view the character's stats. Use
+* ```stats``` : Add stats to the character, or view the character's stats. Use
 ```stats update``` to update the value of a stat.
+* ```note``` : Take a note that is saved with the character.
+* ```notes``` : View, edit or delete previously taken notes for this character.
 
 ### Using Trackers
 
