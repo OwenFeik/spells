@@ -33,6 +33,7 @@ class Char:
             tracker.TrackerCollection(name=Char.TRACKER_COLLECTION_NAME),
         )
         self.stats = kwargs.get("stats")
+        self.notes = kwargs.get("notes", [])
 
     def __str__(self):
         klasse_string = ", ".join(
@@ -143,6 +144,16 @@ class Char:
                 }
             )
 
+    def add_note(self, note):
+        self.notes.append(note)
+
+    def remove_note(self, index):
+        self.notes = self.notes[:index] + self.notes[index + 1 :]
+
+    def replace_note(self, index, new):
+        self.remove_note(index)
+        self.notes.insert(index, new)
+
     def to_json(self):
         return {
             "name": self.name,
@@ -151,6 +162,7 @@ class Char:
             "prepared": [s.name for s in self.prepared],
             "trackers": self.trackers.to_json(),
             "stats": self.stats.to_json() if self.stats is not None else None,
+            "notes": self.notes,
         }
 
     @staticmethod
@@ -285,8 +297,12 @@ class Stats:
         return string
 
     def update_stat_wizard(self):
-        self.set_stat(cli.get_choice("Update which stat?", [s.upper() for s in Stats.DND_STATS]), cli.get_integer("New score", 10))
-        
+        self.set_stat(
+            cli.get_choice(
+                "Update which stat?", [s.upper() for s in Stats.DND_STATS]
+            ),
+            cli.get_integer("New score", 10),
+        )
 
     def to_json(self):
         return {s: getattr(self, s) for s in Stats.DND_STATS}

@@ -411,6 +411,54 @@ def stats(context):
         )
 
 
+def notes(context):
+    cli.print_list(
+        "Notes: ",
+        [
+            n.partition("\n")[0] + cli.TRUNCATED if "\n" in n else n
+            for n in context.character.notes
+        ],
+        truncate_to=cli.get_width(context.config["use_full_width"]),
+    )
+    context.update_options(("note", context.character.notes))
+
+
+def note(context):
+    if not context.character_check(True):
+        return
+
+    if context.arg_count() == 1 and context.get_arg(0).isnumeric():
+        if len(context.character.notes) >= (i := int(context.get_arg(0)) - 1):
+            print(context.character.notes[i])
+            print("\n[1] Edit [2] Delete")
+            context.update_options(
+                (
+                    "func",
+                    [
+                        lambda: context.character.replace_note(
+                            i, t  # pylint: disable=undefined-variable
+                        )
+                        if (
+                            t := cli.get_text_editor(
+                                default=context.character.notes[i]
+                            ).strip()
+                        )
+                        else None,
+                        lambda: context.character.remove_note(i),
+                    ],
+                )
+            )
+        else:
+            print(
+                f"You only have {len(context.character.notes)} notes"
+                f" for {context.character.name}."
+            )
+    else:
+        note = cli.get_text_editor().strip()
+        if note:
+            context.character.add_note(note)
+
+
 mapping = {
     "exit": exit_app,
     "save": save,
@@ -453,4 +501,6 @@ mapping = {
     "load": load,
     "load_orcbrew": load_orcbrew,
     "stats": stats,
+    "notes": notes,
+    "note": note,
 }

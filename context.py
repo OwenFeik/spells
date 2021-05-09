@@ -146,7 +146,7 @@ class Context:
         try:
             if self.command.isnumeric() and len(self.args) == 0:
                 index = int(self.command) - 1
-                if self.options and index < len(self.options):
+                if self.options and 0 <= index < len(self.options):
                     option = self.options[index]
                     if self.option_mode == "spell":
                         self.get_input(string=f"info {option}")
@@ -154,9 +154,14 @@ class Context:
                         self.get_input(string=f"char {option}")
                     elif self.option_mode == "roll":
                         self.get_input(string=option)
+                    elif self.option_mode == "note":
+                        self.get_input(string=f"note {self.command}")
                     elif self.option_mode == "setting":
                         self.config[option] = not self.config[option]
                         print(f"Toggled {option} to {self.config[option]}.")
+                        return
+                    elif self.option_mode == "func":
+                        option()
                         return
                 else:
                     print("That option isn't available right now.")

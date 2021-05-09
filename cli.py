@@ -1,10 +1,17 @@
 import os  # get_terminal_size
 import re
 import dataloaders
+import subprocess  # notes editor
+import tempfile  # notes editor
 import utilities
 
 
 PS = "> "
+TRUNCATED = "..."
+
+# TODO : windows
+EDITOR_ENVIRONMENT_VARIABLE = "EDITOR"
+EDITOR_FALLBACK = "vim"
 
 
 def print_spell(spell, width=None, print_classes=True, options=True):
@@ -125,7 +132,11 @@ def print_chars():
             for klasse in chars[i].get("classes"):
                 if not first:
                     char_string += ", "
-                char_string += f"{utilities.capitalise(klasse.get('name'))} {klasse.get('level')}"
+                char_string += (
+                    utilities.capitalise(klasse.get("name"))
+                    + " "
+                    + klasse.get("level")
+                )
                 first = False
         print(f"\nCharacters:\n{char_string}\n")
         opt = [char.get("name").lower() for char in chars]
@@ -134,11 +145,18 @@ def print_chars():
         print("No characters saved.")
 
 
-def print_list(title, items, afterword=""):
+def print_list(title, items, afterword="", truncate_to=None):
     print(f"\n{title}{':' if title[-1].isalpha() else ''}")
 
     for i, item in enumerate(items):
-        print(f"\t[{i + 1}] {item}")
+        line = f"\t[{i + 1}] {item}"
+        if truncate_to:
+            line = (
+                line[: truncate_to - len(TRUNCATED)] + TRUNCATED
+                if len(line) > truncate_to
+                else line
+            )
+        print(line)
 
     if afterword:
         print(f"\n{afterword}")
@@ -164,8 +182,8 @@ def get_decision(prompt, default=True):
     return resp == "y" or default and resp == ""
 
 
-def get_choice(prompt, items, labels_for=None):
-    print_list(prompt, items)
+def get_choice(prompt, items, labels_for=None, truncate_to=None):
+    print_list(prompt, items, truncate_to=truncate_to)
 
     choice = input(PS)
     while (
@@ -196,3 +214,19 @@ def get_integer(prompt, default=None):
         print("Please enter a number.")
 
     return int(v)
+
+
+def get_text_editor(default=""):
+    # TODO : windows
+
+    with tempfile.NamedTemporaryFile(suffix=".txt") as tf:
+        tf.write(default.encode())
+        tf.flush()
+        subprocess.call(
+            [
+                os.environ.get(EDITOR_ENVIRONMENT_VARIABLE, EDITOR_FALLBACK),
+                tf.name,
+            ]
+        )
+        tf.seek(0)
+        return tf.read().decode()
