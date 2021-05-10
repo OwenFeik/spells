@@ -1,4 +1,5 @@
 #!/bin/python3
+import readline # allow use of arrow keys etc in app
 
 import dataloaders
 
