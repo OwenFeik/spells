@@ -6,6 +6,7 @@ import roll
 
 import cli
 import constants
+import utilities
 
 
 class AbstractTracker:
@@ -89,6 +90,10 @@ class TrackerCommand:
         self.func = func
 
     @property
+    def name(self):
+        return self.names[0] if self.names else None
+
+    @property
     def needs_arg(self):
         return self.needs_string or self.needs_quantity
 
@@ -138,6 +143,14 @@ class Tracker(AbstractTracker):
 
     def __repr__(self):
         return super().__repr__().replace("Abstract", "", 1)
+
+    @property
+    def at_max(self):
+        return self.quantity >= self.maximum
+
+    @property
+    def at_min(self):
+        return self.quantity <= self.minimum
 
     def create_default_commands(self):
         return [
@@ -220,6 +233,10 @@ class Tracker(AbstractTracker):
 
         for c in remove:
             self.commands.remove(c)
+
+    def replace_command(self, command):
+        self.remove_command(command.name)
+        self.add_command(command)
 
     def start_delta(self):
         self._old_quantities.append(self.quantity)
@@ -446,8 +463,14 @@ class TrackerCollection(AbstractTracker):
         )
 
     def rest(self):
+        messages = []
         for t in self.trackers.values():
-            t.rest()
+            if isinstance((m := t.rest()), list):
+                messages.extend(m)
+            elif isinstance(m, str):
+                messages.append(m)
+
+        return messages
 
     def add_to_char(self, char):
         char.trackers.add_tracker(self)
@@ -733,7 +756,7 @@ class HitDieTracker(Tracker):
         for kw, arg in [
             ("minimum", 0),
             ("maximum", 0),
-            ("reset_on_rest", True),
+            ("reset_on_rest", False),
         ]:
             kwargs[kw] = kwargs.get(kw, arg)
 
@@ -746,11 +769,16 @@ class HitDieTracker(Tracker):
         self.hp = hp_tracker
         self.die_size = kwargs.get("die_size")
 
-    def rest(self):
-        if not self.reset_on_rest:
-            return
-
     def heal(self, character):
+        if self.hp.maximum is None:
+            if cli.get_decision(
+                f"{character.name} doesn't have maximum hit points set."
+                " Set now?"
+            ):
+                self.hp.set_maximum(cli.get_integer("Max hit points"))
+            else:
+                return
+
         if character.stats:
             mod = character.stats.get_mod("con")
         else:
@@ -766,7 +794,7 @@ class HitDieTracker(Tracker):
             self.hp.add(roll.get_rolls(f"d{self.die_size} + {mod}")[0].total)
 
         return (
-            f"Used {self.finish_delta()} {self.name} to heal for"
+            f"Used {abs(self.finish_delta())} {self.name} to heal for"
             f" {self.hp.finish_delta()} hit points. Now at {self.hp.quantity}"
             " hit points."
         )
@@ -783,8 +811,33 @@ class HitDieTracker(Tracker):
 
 class HitDieCollection(TrackerCollection):
     def __init__(self, hp_tracker, **kwargs):
+        kwargs["reset_on_rest"] = kwargs.get("reset_on_rest", True)
+
         super().__init__(**kwargs)
         self.hp_tracker = hp_tracker
+        self.character_level = kwargs.get("character_level")
+
+    def rest(self):
+        trackers = sorted(self.trackers.values(), key=lambda t: -t.die_size)
+        [t.start_delta() for t in trackers]
+
+        i = 0
+        while i < len(trackers) and trackers[i].at_max:
+            i += 1
+
+        to_regain = max(self.character_level // 2, 1)
+        while i < len(trackers) and to_regain:
+            trackers[i].add(1)
+            to_regain -= 1
+
+            while i < len(trackers) and trackers[i].at_max:
+                i += 1
+
+        deltas = [
+            f"{delta}{t.name}" for t in trackers if (delta := t.finish_delta())
+        ]
+        if deltas:
+            return f"Regained {utilities.punctuate_list(deltas)}."
 
     def handle_command(self):
         raise NotImplementedError()
@@ -798,6 +851,7 @@ class HitDieCollection(TrackerCollection):
             return t
 
     def set_up_hd(self, char):
+        self.character_level = 0
         if not self.quantity:
             for k in char.klasses:
                 size = k.get("hit_die")
@@ -815,6 +869,14 @@ class HitDieCollection(TrackerCollection):
                 t = self.get_tracker_from_die_size(size)
                 t.maximum += k["level"]
                 t.quantity = t.maximum
+
+                self.character_level += k["level"]
+
+    def to_json(self):
+        return {
+            **super().to_json(),
+            "character_level": self.character_level,
+        }
 
 
 class HealthCollection(TrackerCollection):

@@ -333,7 +333,7 @@ def rename(context):
 
 def rest(context):
     if context.character_check():
-        context.character.long_rest()
+        print("\n".join(context.character.long_rest()))
     else:
         print('To rest, start or load a character with "char".')
 

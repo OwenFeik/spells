@@ -68,8 +68,7 @@ class Char:
 
     def long_rest(self):
         self.spell_slots_used = [0] * 9
-        for t in self.trackers.values():
-            t.rest()
+        return self.trackers.rest()
 
     def has_spell_slot(self, level):
         if level == 0:

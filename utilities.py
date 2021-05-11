@@ -129,3 +129,11 @@ def replace_unicode(string):
         .replace("\u2018", "'")
         .replace("\u2013", "-")
     )
+
+
+def punctuate_list(l):
+    if len(l) > 1:
+        return f"{', '.join(l[:-1])} and {l[-1]}"
+    elif len(l):
+        return l[0]
+    return ""
