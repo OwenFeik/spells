@@ -1,5 +1,9 @@
 #!/bin/python3
-import readline  # allow use of arrow keys etc in app
+
+import os
+
+if os.name == "posix":
+    import readline  # avoid arrow keys inputting escape characters
 
 import dataloaders
 

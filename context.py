@@ -30,9 +30,17 @@ class Context:
                 self.raw_text = string.strip()
             else:
                 self.raw_text = input(f"{message}{cli.PS}").strip()
-            self.arg_text = self.raw_text.replace(",", "")
-            self.command, *self.args = self.arg_text.split()
-            self.arg_text = self.arg_text.replace(self.command, "", 1).strip()
+
+            if not self.raw_text:
+                self.arg_text = ""
+                self.command = ""
+                self.args = []
+            else:
+                self.arg_text = self.raw_text.replace(",", "")
+                self.command, *self.args = self.arg_text.split()
+                self.arg_text = self.arg_text.replace(
+                    self.command, "", 1
+                ).strip()
         except Exception as e:
             print(f"Ran into issue parsing input: {e}.")
             if self.config["print_stack_traces"]:
@@ -144,6 +152,9 @@ class Context:
 
     def handle_command(self):
         try:
+            if not self.command:
+                return
+
             if self.command.isnumeric() and len(self.args) == 0:
                 index = int(self.command) - 1
                 if self.options and 0 <= index < len(self.options):

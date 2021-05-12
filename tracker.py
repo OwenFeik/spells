@@ -155,11 +155,11 @@ class TrackerCommand:
         quantity = string = tracker = None
         character = context.character
         if not args:
-            if (not self.needs_arg or self.arg_optional):
+            if not self.needs_arg or self.arg_optional:
                 return self.call()
             else:
                 return TrackerCommand.MISSING_ARG_MESSAGE
-        
+
         if self.needs_string:
             string = args[0]
         elif args[0].isnumeric():
@@ -178,7 +178,12 @@ class TrackerCommand:
         else:
             return TrackerCommand.MISSING_ARG_MESSAGE
 
-        return self.call(quantity=quantity, string=string, tracker=tracker, character=character)
+        return self.call(
+            quantity=quantity,
+            string=string,
+            tracker=tracker,
+            character=character,
+        )
 
 
 class Tracker(AbstractTracker):
@@ -427,8 +432,22 @@ class TrackerCollection(AbstractTracker):
 
     def create_default_commands(self):
         return [
-            TrackerCommand(["add"], [TrackerCommandOptions.TRACKER, TrackerCommandOptions.CHARACTER], self.add_from_other),
-            TrackerCommand(["remove"], [TrackerCommandOptions.TRACKER, TrackerCommandOptions.CHARACTER], self.move_to_root)
+            TrackerCommand(
+                ["add"],
+                [
+                    TrackerCommandOptions.TRACKER,
+                    TrackerCommandOptions.CHARACTER,
+                ],
+                self.add_from_other,
+            ),
+            TrackerCommand(
+                ["remove"],
+                [
+                    TrackerCommandOptions.TRACKER,
+                    TrackerCommandOptions.CHARACTER,
+                ],
+                self.move_to_root,
+            ),
         ]
 
     def get(self, name=None, names=None):
@@ -447,12 +466,12 @@ class TrackerCollection(AbstractTracker):
         return None
 
     def get_parent(self, tracker):
-        if isinstance(tracker, str): # allow name
+        if isinstance(tracker, str):  # allow name
             names = TrackerCollection.expand_name(tracker)[:-1]
             if len(names) == 0:
                 return self
             return self.get(names=names)
-        elif isinstance(tracker, AbstractTracker): # or Tracker object
+        elif isinstance(tracker, AbstractTracker):  # or Tracker object
             to_visit = [self]
             while to_visit:
                 tc = to_visit.pop(0)
