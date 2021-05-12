@@ -65,4 +65,5 @@ DEFAULT_CONFIG = {
     "load_previous_char": True,
     "use_full_width": False,
     "print_stack_traces": False,
+    "note_editor_program": None,
 }

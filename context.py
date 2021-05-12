@@ -168,9 +168,7 @@ class Context:
                     elif self.option_mode == "note":
                         self.get_input(string=f"note {self.command}")
                     elif self.option_mode == "setting":
-                        self.config[option] = not self.config[option]
-                        print(f"Toggled {option} to {self.config[option]}.")
-                        return
+                        self.get_input(string=f"settings {option}")
                     elif self.option_mode == "func":
                         option()
                         return

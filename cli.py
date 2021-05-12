@@ -9,9 +9,12 @@ import utilities
 PS = "> "
 TRUNCATED = "..."
 
-# TODO : windows
+# Text editing on linux is done through tempfile
 EDITOR_ENVIRONMENT_VARIABLE = "EDITOR"
-EDITOR_FALLBACK = "vim"
+EDITOR_FALLBACK = "vim" if os.name == "posix" else "notepad"
+
+# On windows, create a text file and have the user edit it
+EDITOR_FILE_PATH = "resources/note.txt"
 
 
 def print_spell(spell, width=None, print_classes=True, options=True):
@@ -216,17 +219,36 @@ def get_integer(prompt, default=None):
     return int(v)
 
 
-def get_text_editor(default=""):
-    # TODO : windows
-
+def get_text_editor_posix(default, editor):
     with tempfile.NamedTemporaryFile(suffix=".txt") as tf:
         tf.write(default.encode())
         tf.flush()
         subprocess.call(
             [
-                os.environ.get(EDITOR_ENVIRONMENT_VARIABLE, EDITOR_FALLBACK),
+                editor,
                 tf.name,
             ]
         )
         tf.seek(0)
         return tf.read().decode()
+
+
+def get_text_editor_nt(default, editor):
+    path = dataloaders.get_real_path(EDITOR_FILE_PATH)
+    with open(path, "w") as f:
+        f.write(default)
+
+    subprocess.call([editor, path], shell=True)
+
+    with open(path, "r") as f:
+        return f.read()
+
+
+def get_text_editor(default="", editor=None):
+    if editor is None:
+        editor = os.environ.get(EDITOR_ENVIRONMENT_VARIABLE, EDITOR_FALLBACK)
+
+    if os.name == "posix":
+        return get_text_editor_posix(default, editor)
+    elif os.name == "nt":
+        return get_text_editor_nt(default, editor)

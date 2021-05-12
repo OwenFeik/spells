@@ -5,6 +5,7 @@ import roll
 
 import char
 import cli
+import constants
 import dataloaders
 import spellbook
 import tracker
@@ -354,12 +355,19 @@ def level_up(context):
 
 
 def settings(context):
-    options = [setting for setting in context.config]
-    state_list = [f"{opt}: {context.config[opt]}" for opt in options]
-    cli.print_list(
-        "Settings", state_list, "Select an option to toggle that setting."
-    )
-    context.update_options(("setting", options))
+    if (setting := context.get_arg(0)) in constants.DEFAULT_CONFIG:
+        if isinstance(context.config[setting], bool):
+            context.config[setting] = not context.config[setting]
+            print(f"Toggled {setting} to {context.config[setting]}.")
+        else:  # currently, all settings are boolean or string
+            context.config[setting] = cli.get_input("New text editor")
+    else:
+        options = [setting for setting in context.config]
+        state_list = [f"{opt}: {context.config[opt]}" for opt in options]
+        cli.print_list(
+            "Settings", state_list, "Select an option to edit that setting."
+        )
+        context.update_options(("setting", options))
 
 
 def load(context):
@@ -440,7 +448,8 @@ def note(context):
                         )
                         if (
                             t := cli.get_text_editor(
-                                default=context.character.notes[i]
+                                default=context.character.notes[i],
+                                editor=context.config["note_editor_program"],
                             ).strip()
                         )
                         else None,
@@ -454,7 +463,9 @@ def note(context):
                 f" for {context.character.name}."
             )
     else:
-        note = cli.get_text_editor().strip()
+        note = cli.get_text_editor(
+            editor=context.config["note_editor_program"]
+        ).strip()
         if note:
             context.character.add_note(note)
 
