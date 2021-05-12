@@ -15,6 +15,7 @@ class AbstractTracker:
         self.default = kwargs.get("default")
         self.quantity = kwargs.get("quantity")
         self.reset_on_rest = kwargs.get("reset_on_rest", False)
+        self.commands = self.create_default_commands()
 
     def __repr__(self):
         return (
@@ -30,15 +31,53 @@ class AbstractTracker:
         command = command.lower()
 
         if context.command in ["t", "tracker", "tc", "collection"] and (
-            command == self.name or re.match(rf"\w+\.{self.name}", command)
+            command == self.name or re.match(rf"[\w\.]+\.{self.name}", command)
         ):
             command, *args = args
             command = command.lower()
 
         return command, args
 
+    def create_default_commands(self):
+        return []
+
     def handle_command(self, context):
-        raise NotImplementedError()
+        command, args = self.parse_args(context)
+        for c in self.commands:
+            if command in c.names:
+                return c.handle(args, context)
+
+        return f"Command {command} not found."
+
+    def add_command(self, command):
+        self.commands.append(command)
+
+    def add_command_name(self, name, new):
+        target = None
+        for c in self.commands:
+            if name in c.names:
+                target = c
+            if new in c.names:
+                raise ValueError(f"A command with name {new} already exists.")
+        target.names.append(new)
+
+    def get_command_names(self, name):
+        for c in self.commands:
+            if name in c.names:
+                return c.names
+
+    def remove_command(self, name):
+        remove = []
+        for c in self.commands:
+            if name in c.names:
+                remove.append(c)
+
+        for c in remove:
+            self.commands.remove(c)
+
+    def replace_command(self, command):
+        self.remove_command(command.name)
+        self.add_command(command)
 
     def reset(self):
         if self.default is not None:
@@ -84,6 +123,7 @@ class TrackerCommand:
         self.names = names
         self.needs_string = TrackerCommandOptions.STRING in options
         self.needs_quantity = TrackerCommandOptions.QUANTITY in options
+        self.needs_tracker = TrackerCommandOptions.TRACKER in options
         self.needs_character = TrackerCommandOptions.CHARACTER in options
         self.arg_optional = TrackerCommandOptions.OPTIONAL in options
         self.arg_allow_equals = TrackerCommandOptions.ALLOW_EQUALS in options
@@ -97,28 +137,35 @@ class TrackerCommand:
     def needs_arg(self):
         return self.needs_string or self.needs_quantity
 
-    def call(self, quantity=None, string=None, character=None):
+    def call(self, quantity=None, string=None, character=None, tracker=None):
         args = ()
 
         if self.needs_quantity:
             args = args + (quantity,)
         if self.needs_string:
             args = args + (string,)
+        if self.needs_tracker:
+            args = args + (tracker,)
         if self.needs_character:
             args = args + (character,)
 
         return self.func(*args)
 
-    def handle(self, args, character=None):
-        quantity = string = None
-        if not args and (not self.needs_arg or self.arg_optional):
-            pass
-        elif self.needs_string:
+    def handle(self, args, context):
+        quantity = string = tracker = None
+        character = context.character
+        if not args:
+            if (not self.needs_arg or self.arg_optional):
+                return self.call()
+            else:
+                return TrackerCommand.MISSING_ARG_MESSAGE
+        
+        if self.needs_string:
             string = args[0]
         elif args[0].isnumeric():
             quantity = int(args[0])
-        elif (rolls := roll.get_rolls(" ".join(args), max_qty=1)) :
-            quantity = rolls[0].total
+        elif self.needs_tracker:
+            tracker = context.get_tracker(args[0])
         elif (
             self.arg_allow_equals
             and len(args) >= 2
@@ -126,10 +173,12 @@ class TrackerCommand:
             and args[1].isnumeric()
         ):
             quantity = int(args[1])
+        elif (rolls := roll.get_rolls(" ".join(args), max_qty=1)) :
+            quantity = rolls[0].total
         else:
             return TrackerCommand.MISSING_ARG_MESSAGE
 
-        return self.call(quantity=quantity, string=string, character=character)
+        return self.call(quantity=quantity, string=string, tracker=tracker, character=character)
 
 
 class Tracker(AbstractTracker):
@@ -207,36 +256,6 @@ class Tracker(AbstractTracker):
                 ["unset"], [TrackerCommandOptions.STRING], self.unset
             ),
         ]
-
-    def add_command(self, command):
-        self.commands.append(command)
-
-    def add_command_name(self, name, new):
-        target = None
-        for c in self.commands:
-            if name in c.names:
-                target = c
-            if new in c.names:
-                raise ValueError(f"A command with name {new} already exists.")
-        target.names.append(new)
-
-    def get_command_names(self, name):
-        for c in self.commands:
-            if name in c.names:
-                return c.names
-
-    def remove_command(self, name):
-        remove = []
-        for c in self.commands:
-            if name in c.names:
-                remove.append(c)
-
-        for c in remove:
-            self.commands.remove(c)
-
-    def replace_command(self, command):
-        self.remove_command(command.name)
-        self.add_command(command)
 
     def start_delta(self):
         self._old_quantities.append(self.quantity)
@@ -362,14 +381,6 @@ class Tracker(AbstractTracker):
         else:
             return f"Current minimum of {self.name}: {self.minimum}."
 
-    def handle_command(self, context):
-        command, args = self.parse_args(context)
-        for c in self.commands:
-            if command in c.names:
-                return c.handle(args, context.character)
-
-        return f"Command {command} not found."
-
     def unset(self, name):
         UNSETTABLE = ["default", "maximum", "minimum"]
 
@@ -414,18 +425,11 @@ class TrackerCollection(AbstractTracker):
     def __repr__(self):
         return f"<TrackerCollection name={self.name} trackers={self.quantity}>"
 
-    def _handle_command(self, context, command, t, args):
-        if t is self:
-            return f"{self.name} can't perform operations on itself."
-        elif command == "add":
-            self.add_tracker(t)
-            context.character.trackers.delete_child(t.name)
-            return f"Added {t.name} to {self.name}."
-        elif command == "remove":
-            context.character.trackers.add_tracker(t)
-            self.delete_child(t.name)
-            return f"Removed {t.name} from {self.name}."
-        return f"Command {command} doesn't exist."
+    def create_default_commands(self):
+        return [
+            TrackerCommand(["add"], [TrackerCommandOptions.TRACKER, TrackerCommandOptions.CHARACTER], self.add_from_other),
+            TrackerCommand(["remove"], [TrackerCommandOptions.TRACKER, TrackerCommandOptions.CHARACTER], self.move_to_root)
+        ]
 
     def get(self, name=None, names=None):
         if not names and name:
@@ -442,25 +446,22 @@ class TrackerCollection(AbstractTracker):
 
         return None
 
-    def get_parent(self, name):
-        names = TrackerCollection.expand_name(name)[:-1]
-        if len(names) == 0:
-            return self
-        return self.get(names=names)
-
-    def handle_command(self, context):
-        command, args = self.parse_args(context)
-
-        if len(args) == 0:
-            return f'If command "{command}" exists, it requires a \
-                tracker as an argument.'
-
-        return self._handle_command(
-            context,
-            command,
-            context.get_tracker(args[0]),
-            args[1:] if len(args) > 1 else [],
-        )
+    def get_parent(self, tracker):
+        if isinstance(tracker, str): # allow name
+            names = TrackerCollection.expand_name(tracker)[:-1]
+            if len(names) == 0:
+                return self
+            return self.get(names=names)
+        elif isinstance(tracker, AbstractTracker): # or Tracker object
+            to_visit = [self]
+            while to_visit:
+                tc = to_visit.pop(0)
+                for t in tc.trackers.values():
+                    if t is tracker:
+                        return tc
+                    elif isinstance(t, TrackerCollection):
+                        to_visit.append(t)
+        return None
 
     def rest(self):
         messages = []
@@ -475,8 +476,22 @@ class TrackerCollection(AbstractTracker):
     def add_to_char(self, char):
         char.trackers.add_tracker(self)
 
+    def add_from_other(self, tracker, character):
+        parent = character.trackers.get_parent(tracker)
+        parent.delete_child(tracker.name)
+        self.add_tracker(tracker)
+        return f"Added {tracker.name} to {self.name}."
+
     def add_tracker(self, child):
         self.trackers[child.name] = child
+
+    def move_to_root(self, tracker, character):
+        if tracker.name in self.trackers:
+            self.delete_child(tracker.name)
+            character.trackers.add_tracker(tracker)
+            return f"Removed {tracker.name} from {self.name}."
+        else:
+            return f"{tracker.name} isn't in {self.name}."
 
     def delete_child(self, name):
         del self.trackers[name]
@@ -534,7 +549,7 @@ class CoinTracker(Tracker):
 
         for c in self.commands:
             if command in c.names:
-                return c.handle(args, context.character)
+                return c.handle(args, context)
 
         return f"Command {command} not found."
 
@@ -838,9 +853,6 @@ class HitDieCollection(TrackerCollection):
         ]
         if deltas:
             return f"Regained {utilities.punctuate_list(deltas)}."
-
-    def handle_command(self):
-        raise NotImplementedError()
 
     def get_tracker_from_die_size(self, size, create=True):
         name = f"d{size}"
