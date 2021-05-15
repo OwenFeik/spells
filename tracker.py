@@ -156,7 +156,12 @@ class TrackerCommand:
         character = context.character
         if not args:
             if not self.needs_arg or self.arg_optional:
-                return self.call()
+                return self.call(
+                    quantity=quantity, 
+                    string=string, 
+                    tracker=tracker, 
+                    character=character
+                )
             else:
                 return TrackerCommand.MISSING_ARG_MESSAGE
 
@@ -200,10 +205,14 @@ class Tracker(AbstractTracker):
 
     @property
     def at_max(self):
+        if self.maximum is None:
+            return False
         return self.quantity >= self.maximum
 
     @property
     def at_min(self):
+        if self.minimum is None:
+            return False
         return self.quantity <= self.minimum
 
     def create_default_commands(self):
@@ -809,7 +818,9 @@ class HitDieTracker(Tracker):
                 f"{character.name} doesn't have maximum hit points set."
                 " Set now?"
             ):
-                self.hp.set_maximum(cli.get_integer("Max hit points"))
+                max_hp = cli.get_integer("Max hit points")
+                self.hp.set_maximum(max_hp)
+                self.hp.set_default(max_hp)
             else:
                 return
 
@@ -851,9 +862,43 @@ class HitDieCollection(TrackerCollection):
         self.hp_tracker = hp_tracker
         self.character_level = kwargs.get("character_level")
 
-    def rest(self):
-        trackers = sorted(self.trackers.values(), key=lambda t: -t.die_size)
+        self.add_command(
+            TrackerCommand("heal", [TrackerCommandOptions.CHARACTER], self.heal)
+        )
+
+    def ordered_trackers(self):
+        return sorted(self.trackers.values(), key=lambda t: -t.die_size)
+
+    def start_mutation(self):
+        self.hp_tracker.start_delta()
+        trackers = self.ordered_trackers()
         [t.start_delta() for t in trackers]
+        return trackers
+
+    def finish_mutation(self, trackers=None):
+        trackers = trackers if trackers else self.ordered_trackers()
+        return utilities.punctuate_list(
+            [f"{abs(d)}{t.name}" for t in trackers if (d := t.finish_delta())]
+        )
+
+    def heal(self, character):
+        trackers = self.start_mutation()
+
+        i = 0
+        while i < len(trackers) and not self.hp_tracker.at_max:
+            if trackers[i].at_min:
+                i += 1
+            else:
+                trackers[i].heal(character)
+
+        if (m := self.finish_mutation(trackers)) :
+            return (
+                f"Spent {m}, regaining {self.hp_tracker.finish_delta()} hit"
+                f" points to {self.hp_tracker.quantity}."
+            )
+
+    def rest(self):
+        trackers = self.start_mutation()
 
         i = 0
         while i < len(trackers) and trackers[i].at_max:
@@ -867,11 +912,8 @@ class HitDieCollection(TrackerCollection):
             while i < len(trackers) and trackers[i].at_max:
                 i += 1
 
-        deltas = [
-            f"{delta}{t.name}" for t in trackers if (delta := t.finish_delta())
-        ]
-        if deltas:
-            return f"Regained {utilities.punctuate_list(deltas)}."
+        if (m := self.finish_mutation(trackers)) :
+            return f"Regained {m}."
 
     def get_tracker_from_die_size(self, size, create=True):
         name = f"d{size}"
@@ -921,9 +963,6 @@ class HealthCollection(TrackerCollection):
         super().__init__(**kwargs)
         self.hp = self.trackers[HealthCollection.HIT_POINTS_TRACKER_NAME]
         self.hd = self.trackers[HealthCollection.HIT_DIE_COLLECTION_NAME]
-
-    def handle_command(self, context):
-        raise NotImplementedError()
 
     def add_to_char(self, char):
         super().add_to_char(char)
