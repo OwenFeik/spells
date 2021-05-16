@@ -109,39 +109,27 @@ class Char:
         if self.klasses and cli.get_decision(
             "Add level to already present class?"
         ):
-            klasse = cli.get_choice(
-                "In which class was a level gained?",
-                [k["name"] for k in self.klasses],
-            )
-            [k for k in self.klasses if k["name"] == klasse][0]["level"] += 1
-        else:
-            klasse = cli.get_input("In which class was a level gained?")
-            caster_type = ""
-            if klasse in constants.CASTER_TYPES:
-                caster_type = klasse
+            if len(self.klasses) == 1:
+                self.klasses[0]["level"] += 1
             else:
-                have_type = False
-                while not have_type:
-                    caster_type = cli.get_input(
-                        "Is this class a half (h), full (f) or non (n) caster?"
-                    )
-                    if caster_type.lower() in ["half", "full", "non"]:
-                        have_type = True
-                    elif caster_type in ["h", "f", "n"]:
-                        caster_type = {"h": "half", "f": "full", "n": "non"}[
-                            caster_type
-                        ]
-                        have_type = True
-                    elif not cli.get_decision("Inadmissable input. Retry?"):
-                        return
+                klasse = cli.get_choice(
+                    "In which class was a level gained?",
+                    [k["name"] for k in self.klasses],
+                )
+                [k for k in self.klasses if k["name"] == klasse][0][
+                    "level"
+                ] += 1
+        else:
+            klasse = cli.get_input("In which class was a level gained?").lower()
 
-            self.klasses.append(
-                {
-                    "name": klasse,
-                    "level": 1,
-                    "caster": constants.CASTER_TYPES[caster_type],
-                }
-            )
+            for k in self.klasses:
+                if k["name"] == klasse:
+                    k["level"] += 1
+            else:
+                self.klasses.append(Char.get_klasse_detail(klasse, 1))
+
+        if (message := self.trackers.level_up(self)) :
+            print(message)
 
     def add_note(self, note):
         self.notes.append(note)

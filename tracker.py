@@ -87,6 +87,9 @@ class AbstractTracker:
         if self.reset_on_rest:
             self.reset()
 
+    def level_up(self, character):
+        return None
+
     def add_to_char(self, char):
         char.trackers.add_tracker(self)
 
@@ -157,10 +160,10 @@ class TrackerCommand:
         if not args:
             if not self.needs_arg or self.arg_optional:
                 return self.call(
-                    quantity=quantity, 
-                    string=string, 
-                    tracker=tracker, 
-                    character=character
+                    quantity=quantity,
+                    string=string,
+                    tracker=tracker,
+                    character=character,
                 )
             else:
                 return TrackerCommand.MISSING_ARG_MESSAGE
@@ -434,10 +437,13 @@ class TrackerCollection(AbstractTracker):
             kwargs["default"] = {}
 
         super().__init__(**kwargs)
-        self.trackers = self.quantity
 
     def __repr__(self):
         return f"<TrackerCollection name={self.name} trackers={self.quantity}>"
+
+    @property
+    def trackers(self):
+        return self.quantity
 
     def create_default_commands(self):
         return [
@@ -500,6 +506,16 @@ class TrackerCollection(AbstractTracker):
                 messages.append(m)
 
         return messages
+
+    def level_up(self, character):
+        message = ""
+        for t in self.trackers.values():
+            if (m := t.level_up(character)) :
+                message += "\n" + m
+
+        if message:
+            return message[1:]
+        return None
 
     def add_to_char(self, char):
         char.trackers.add_tracker(self)
@@ -882,6 +898,9 @@ class HitDieCollection(TrackerCollection):
         )
 
     def heal(self, character):
+        if self.hp_tracker.at_max:
+            return f"{character.name} is already at full health."
+
         trackers = self.start_mutation()
 
         i = 0
@@ -896,6 +915,8 @@ class HitDieCollection(TrackerCollection):
                 f"Spent {m}, regaining {self.hp_tracker.finish_delta()} hit"
                 f" points to {self.hp_tracker.quantity}."
             )
+        else:
+            return "No hit die to expend."
 
     def rest(self):
         trackers = self.start_mutation()
@@ -925,25 +946,31 @@ class HitDieCollection(TrackerCollection):
 
     def set_up_hd(self, char):
         self.character_level = 0
-        if not self.quantity:
-            for k in char.klasses:
-                size = k.get("hit_die")
-                if size is None:
-                    size = constants.KLASSE_HIT_DIE.get(
-                        k["name"],
-                        cli.get_choice(
-                            f"Which hit die does the class {k['name']} use?",
-                            [f"d{s}" for s in constants.HIT_DIE_SIZES],
-                            constants.HIT_DIE_SIZES,
-                        ),
-                    )
-                    k["hit_die"] = size
+        self.quantity = {}
+        for k in char.klasses:
+            size = k.get("hit_die")
+            if size is None:
+                size = constants.KLASSE_HIT_DIE.get(
+                    k["name"],
+                    cli.get_choice(
+                        f"Which hit die does the class {k['name']} use?",
+                        [f"d{s}" for s in constants.HIT_DIE_SIZES],
+                        constants.HIT_DIE_SIZES,
+                    ),
+                )
+                k["hit_die"] = size
 
-                t = self.get_tracker_from_die_size(size)
-                t.maximum += k["level"]
-                t.quantity = t.maximum
+            t = self.get_tracker_from_die_size(size)
+            t.maximum += k["level"]
+            t.quantity = t.maximum
 
-                self.character_level += k["level"]
+            self.character_level += k["level"]
+
+    def level_up(self, character):
+        current = {t: self.trackers[t].quantity for t in self.trackers}
+        self.set_up_hd(character)
+        for t in current:
+            self.trackers[t].quantity = current[t]
 
     def to_json(self):
         return {
@@ -963,6 +990,12 @@ class HealthCollection(TrackerCollection):
         super().__init__(**kwargs)
         self.hp = self.trackers[HealthCollection.HIT_POINTS_TRACKER_NAME]
         self.hd = self.trackers[HealthCollection.HIT_DIE_COLLECTION_NAME]
+
+        self.add_command(
+            TrackerCommand(
+                ["heal"], [TrackerCommandOptions.CHARACTER], self.hd.heal
+            )
+        )
 
     def add_to_char(self, char):
         super().add_to_char(char)
