@@ -87,7 +87,7 @@ class AbstractTracker:
         if self.reset_on_rest:
             self.reset()
 
-    def level_up(self, character):
+    def level_up(self, character, level):
         return None
 
     def add_to_char(self, char):
@@ -283,7 +283,7 @@ class Tracker(AbstractTracker):
             delta = self.quantity - self._old_quantities.pop()
 
         if as_string:
-            if delta != 0:
+            if delta:
                 return f" ({'+' if delta > 0 else ''}{delta})"
             else:
                 return ""
@@ -507,10 +507,10 @@ class TrackerCollection(AbstractTracker):
 
         return messages
 
-    def level_up(self, character):
+    def level_up(self, character, level):
         message = ""
         for t in self.trackers.values():
-            if (m := t.level_up(character)) :
+            if (m := t.level_up(character, level)) :
                 message += "\n" + m
 
         if message:
@@ -942,35 +942,25 @@ class HitDieCollection(TrackerCollection):
         if t is None:
             t = HitDieTracker(self.hp_tracker, name=name, die_size=size)
             self.add_tracker(t)
-            return t
+        return t
 
     def set_up_hd(self, char):
         self.character_level = 0
         self.quantity = {}
         for k in char.klasses:
-            size = k.get("hit_die")
-            if size is None:
-                size = constants.KLASSE_HIT_DIE.get(
-                    k["name"],
-                    cli.get_choice(
-                        f"Which hit die does the class {k['name']} use?",
-                        [f"d{s}" for s in constants.HIT_DIE_SIZES],
-                        constants.HIT_DIE_SIZES,
-                    ),
-                )
-                k["hit_die"] = size
-
+            size = HealthCollection.get_hit_die_size(k)
             t = self.get_tracker_from_die_size(size)
             t.maximum += k["level"]
             t.quantity = t.maximum
 
             self.character_level += k["level"]
 
-    def level_up(self, character):
-        current = {t: self.trackers[t].quantity for t in self.trackers}
-        self.set_up_hd(character)
-        for t in current:
-            self.trackers[t].quantity = current[t]
+    def level_up(self, character, level):
+        t = self.get_tracker_from_die_size(
+            HealthCollection.get_hit_die_size(level)
+        )
+        t.maximum += 1
+        t.quantity += 1
 
     def to_json(self):
         return {
@@ -996,10 +986,76 @@ class HealthCollection(TrackerCollection):
                 ["heal"], [TrackerCommandOptions.CHARACTER], self.hd.heal
             )
         )
+        self._set_up_done = kwargs.get("set_up_done", False)
 
     def add_to_char(self, char):
+        if not self._set_up_done:
+            self.hd.set_up_hd(char)
+
+            if cli.get_decision(
+                "Enter maximum hit points?"
+                " Otherwise average will be calculated."
+            ):
+                self.hp.quantity = self.hp.maximum = cli.get_integer(
+                    "Maximum hit points"
+                )
+            else:
+                first = True
+                quantity = 0
+                for k in char.klasses:
+                    levels = k["level"]
+                    size = HealthCollection.get_hit_die_size(k)
+                    if first:
+                        levels -= 1
+                        quantity += size
+                        first = False
+                    quantity += (
+                        HealthCollection.get_hit_die_average(size) * levels
+                    )
+                    quantity += char.stats.get_mod("con") * k["level"]
+
+                self.hp.quantity = self.hp.maximum = quantity
+
+            self._set_up_done = True
         super().add_to_char(char)
-        self.hd.set_up_hd(char)
+
+    def level_up(self, character, level):
+        message = super().level_up(character, level)
+
+        size = HealthCollection.get_hit_die_size(level)
+        if cli.get_decision("Roll for hit point increase?"):
+            while (increase := roll.get_rolls(f"d{size}")[0].result) == 1:
+                pass
+        else:
+            increase = HealthCollection.get_hit_die_average(size)
+        increase += character.stats.get_mod("con")
+        self.hp.maximum += increase
+
+        m = f"Maximum hit points increased by {increase}."
+
+        if message:
+            return f"{message}\n{m}"
+        else:
+            return m
+
+    @staticmethod
+    def get_hit_die_average(size):
+        return size // 2 + 1
+
+    @staticmethod
+    def get_hit_die_size(klasse):
+        size = klasse.get("hit_die")
+        if size is None:
+            size = constants.KLASSE_HIT_DIE.get(
+                klasse["name"],
+                cli.get_choice(
+                    f"Which hit die does the class {klasse['name']} use?",
+                    [f"d{s}" for s in constants.HIT_DIE_SIZES],
+                    constants.HIT_DIE_SIZES,
+                ),
+            )
+            klasse["hit_die"] = size
+        return size
 
     @staticmethod
     def default_quantity():
@@ -1029,6 +1085,7 @@ class HealthCollection(TrackerCollection):
             HealthCollection.HIT_POINTS_TRACKER_NAME: hp,
             HealthCollection.HIT_DIE_COLLECTION_NAME: hd,
         }
+        data["set_up_done"] = True
 
         return HealthCollection(**data)
 

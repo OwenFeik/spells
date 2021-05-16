@@ -32,7 +32,7 @@ class Char:
             "trackers",
             tracker.TrackerCollection(name=Char.TRACKER_COLLECTION_NAME),
         )
-        self.stats = kwargs.get("stats")
+        self._stats = kwargs.get("stats")
         self.notes = kwargs.get("notes", [])
 
     def __str__(self):
@@ -43,6 +43,18 @@ class Char:
             ]
         )
         return f"{utilities.capitalise(self.name)} | {klasse_string}"
+
+    @property
+    def stats(self):
+        if self._stats is None:
+            if cli.get_decision(
+                f"{self.name} has no stats, which are required to"
+                " perform this action. Create now?"
+            ):
+                self._stats = Stats.from_wizard()
+            else:
+                raise AttributeError(f"{self.name} has no stats")
+        return self._stats
 
     @property
     def caster_level(self):
@@ -110,13 +122,13 @@ class Char:
             "Add level to already present class?"
         ):
             if len(self.klasses) == 1:
-                self.klasses[0]["level"] += 1
+                (level := self.klasses[0])["level"] += 1
             else:
                 klasse = cli.get_choice(
                     "In which class was a level gained?",
                     [k["name"] for k in self.klasses],
                 )
-                [k for k in self.klasses if k["name"] == klasse][0][
+                (level := [k for k in self.klasses if k["name"] == klasse][0])[
                     "level"
                 ] += 1
         else:
@@ -125,10 +137,14 @@ class Char:
             for k in self.klasses:
                 if k["name"] == klasse:
                     k["level"] += 1
+                    level = k
+                    break
             else:
-                self.klasses.append(Char.get_klasse_detail(klasse, 1))
+                self.klasses.append(
+                    (level := Char.get_klasse_detail(klasse, 1))
+                )
 
-        if (message := self.trackers.level_up(self)) :
+        if (message := self.trackers.level_up(self, level)) :
             print(message)
 
     def add_note(self, note):
@@ -188,6 +204,8 @@ class Char:
 
     @staticmethod
     def get_klasse_detail(name, level):
+        name = name.lower()
+
         CASTER_TYPE_NAMES = ["non", "half", "full"]
         if (caster_type := constants.CASTER_TYPES.get(name)) is None:
             caster_type = constants.CASTER_TYPES[
