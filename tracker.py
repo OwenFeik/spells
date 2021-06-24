@@ -221,7 +221,7 @@ class Tracker(AbstractTracker):
     def create_default_commands(self):
         return [
             TrackerCommand(["reset"], [], self.reset),
-            TrackerCommand(["rest"], [], self.rest),
+            TrackerCommand(["rest"], [], self.toggle_rest_behaviour),
             TrackerCommand(["++"], [], lambda: self.add(1)),
             TrackerCommand(["--"], [], lambda: self.remove(1)),
             TrackerCommand(
