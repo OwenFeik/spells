@@ -17,6 +17,9 @@ class AbstractTracker:
         self.reset_on_rest = kwargs.get("reset_on_rest", False)
         self.commands = self.create_default_commands()
 
+        if self.default and not self.quantity:
+            self.reset()
+
     def __repr__(self):
         return (
             f"<AbstractTracker name={self.name} default={self.default} "
@@ -197,11 +200,12 @@ class TrackerCommand:
 class Tracker(AbstractTracker):
     def __init__(self, **kwargs):
         kwargs["quantity"] = kwargs.get("quantity", 0)
-        super().__init__(**kwargs)
         self.maximum = kwargs.get("maximum")
         self.minimum = kwargs.get("minimum")
-        self.commands = self.create_default_commands()
         self._old_quantities = []  # stack
+
+        super().__init__(**kwargs)
+        self.commands = self.create_default_commands()
 
     def __repr__(self):
         return super().__repr__().replace("Abstract", "", 1)
@@ -996,9 +1000,9 @@ class HealthCollection(TrackerCollection):
                 "Enter maximum hit points?"
                 " Otherwise average will be calculated."
             ):
-                self.hp.quantity = self.hp.maximum = cli.get_integer(
-                    "Maximum hit points"
-                )
+                self.hp.quantity = (
+                    self.hp.maximum
+                ) = self.hp.default = cli.get_integer("Maximum hit points")
             else:
                 first = True
                 quantity = 0
@@ -1014,7 +1018,7 @@ class HealthCollection(TrackerCollection):
                     )
                     quantity += char.stats.get_mod("con") * k["level"]
 
-                self.hp.quantity = self.hp.maximum = quantity
+                self.hp.quantity = self.hp.maximum = self.hp.default = quantity
 
             self._set_up_done = True
         super().add_to_char(char)

@@ -140,7 +140,9 @@ class Context:
                     if current == target:
                         return tc.trackers[current]
                     else:
-                        return self.get_tracker(root=tc, names=names[1:])
+                        return self.get_tracker(
+                            root=tc.trackers[current], names=names[1:]
+                        )
 
                 for t in tc.trackers.values():
                     if isinstance(t, tracker.TrackerCollection):
@@ -179,9 +181,7 @@ class Context:
             if self.command in commands.mapping:
                 commands.mapping[self.command](self)
                 return
-            elif self.character and (
-                t := self.character.trackers.get(self.command)
-            ):
+            elif (t := self.get_tracker(self.command)) :
                 if self.args:
                     print(t.handle_command(self))
                 else:
