@@ -76,16 +76,16 @@ def get_cache():
         with open(get_real_path("resources/cache.json"), "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return {"character": None}
+        return {"character": None, "characters": []}
 
 
-def save_cache(path=None):
+def save_cache(path=None, save_files=None):
     resources_path = get_real_path("resources")
     if not os.path.exists(resources_path):
         os.mkdir(resources_path)
 
     with open(resources_path + "/cache.json", "w") as f:
-        json.dump({"character": path}, f)
+        json.dump({"character": path, "save_files": save_files or []}, f)
 
 
 def clear_cache():

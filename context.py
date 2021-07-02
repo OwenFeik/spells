@@ -13,6 +13,7 @@ class Context:
         self.config = config
         self.character = character
         self.save_file = ""
+        self.save_files = []
         self.raw_text = ""
         self.arg_text = ""
         self.command = ""
@@ -54,9 +55,11 @@ class Context:
             self.save_file = dataloaders.save_character(
                 self.character, self.save_file
             )
-            dataloaders.save_cache(self.save_file)
+            if not self.save_file in self.save_files:
+                self.save_files.append(self.save_file)
+            dataloaders.save_cache(self.save_file, self.save_files)
         else:
-            dataloaders.save_cache()
+            dataloaders.save_cache(save_files=self.save_files)
         dataloaders.save_config(self.config)
 
     def update_options(self, option_tuple):

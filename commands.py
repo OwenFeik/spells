@@ -207,7 +207,7 @@ def character(context):
         return
 
     if context.character_check() and cli.get_decision(
-        "Current character: " f"{context.character.name}. Save this character?"
+        f"Current character: {context.character.name}. Save this character?"
     ):
 
         context.save()
@@ -341,9 +341,11 @@ def settings(context):
 
 
 def load(context):
-    path = context.raw_text.replace("load", "", 1).strip()
-
     try:
+        if context.arg_count():
+            path = context.raw_text.replace("load", "", 1).strip()
+        else:
+            path = cli.get_choice("Load which save?", context.save_files)
         data = dataloaders.load_character_from_path(path)
     except FileNotFoundError:
         print(f'Failed to load path "{path}".')

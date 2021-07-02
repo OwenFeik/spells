@@ -33,6 +33,7 @@ if cfg["load_previous_char"] and cache["character"]:
 context = context.Context(sb, cfg, c)
 if c is not None:
     context.save_file = cache["character"]
+    context.save_files = cache.get("save_files", [])
 
 while True:
     context.get_input()
