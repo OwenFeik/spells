@@ -16,6 +16,7 @@ class Context:
         self.config = config
         self.character = character
         self.save_file = ""
+        self.save_files = []
         self.raw_text = ""
         self.arg_text = ""
         self.command = ""
@@ -67,9 +68,11 @@ class Context:
             self.save_file = dataloaders.save_character(
                 self.character, self.save_file
             )
-            dataloaders.save_cache(self.save_file)
+            if not self.save_file in self.save_files:
+                self.save_files.append(self.save_file)
+            dataloaders.save_cache(self.save_file, self.save_files)
         else:
-            dataloaders.save_cache()
+            dataloaders.save_cache(save_files=self.save_files)
         dataloaders.save_config(self.config)
 
     def update_options(self, option_tuple):
@@ -153,57 +156,57 @@ class Context:
         return True if self.spellbook else False
 
     def handle_command(self):
-        try:
-            if not self.command:
-                return
+        # try:
+        if not self.command:
+            return
 
-            if self.command.isnumeric() and len(self.args) == 0:
-                index = int(self.command) - 1
-                if self.options and 0 <= index < len(self.options):
-                    option = self.options[index]
-                    if self.option_mode == "spell":
-                        self.get_input(string=f"info {option}")
-                    elif self.option_mode == "char":
-                        self.get_input(string=f"char {option}")
-                    elif self.option_mode == "roll":
-                        self.get_input(string=option)
-                    elif self.option_mode == "note":
-                        self.get_input(string=f"note {self.command}")
-                    elif self.option_mode == "setting":
-                        self.get_input(string=f"settings {option}")
-                    elif self.option_mode == "func":
-                        option()
-                        return
-                else:
-                    print("That option isn't available right now.")
+        if self.command.isnumeric() and len(self.args) == 0:
+            index = int(self.command) - 1
+            if self.options and 0 <= index < len(self.options):
+                option = self.options[index]
+                if self.option_mode == "spell":
+                    self.get_input(string=f"info {option}")
+                elif self.option_mode == "char":
+                    self.get_input(string=f"char {option}")
+                elif self.option_mode == "roll":
+                    self.get_input(string=option)
+                elif self.option_mode == "note":
+                    self.get_input(string=f"note {self.command}")
+                elif self.option_mode == "setting":
+                    self.get_input(string=f"settings {option}")
+                elif self.option_mode == "func":
+                    option()
                     return
-
-            if self.command in commands.mapping:
-                commands.mapping[self.command](self)
-                return
-            elif (t := self.get_tracker(self.command)) :
-                if self.args:
-                    print(t.handle_command(self))
-                else:
-                    print(t)
-                return
-
-            rolls = roll.get_rolls(self.raw_text)
-            if rolls:
-                self.update_roll(rolls[-1])
-                print(roll.rolls_string(rolls))
             else:
-                suggestion = utilities.suggest_command(
-                    self.command, commands.mapping.keys()
+                print("That option isn't available right now.")
+                return
+
+        if self.command in commands.mapping:
+            commands.mapping[self.command](self)
+            return
+        elif (t := self.get_tracker(self.command)) :
+            if self.args:
+                print(t.handle_command(self))
+            else:
+                print(t)
+            return
+
+        rolls = roll.get_rolls(self.raw_text)
+        if rolls:
+            self.update_roll(rolls[-1])
+            print(roll.rolls_string(rolls))
+        else:
+            suggestion = utilities.suggest_command(
+                self.command, commands.mapping.keys()
+            )
+            if suggestion:
+                print(
+                    f"Unknown command: {self.command}. "
+                    + f'Perhaps you meant "{suggestion}".'
                 )
-                if suggestion:
-                    print(
-                        f"Unknown command: {self.command}. "
-                        + f'Perhaps you meant "{suggestion}".'
-                    )
-                else:
-                    print(f"Unknown command: {self.command}.")
-        except Exception as e:
-            print(f"Ran into issue executing command: {e}.")
-            if self.config["print_stack_traces"]:
-                traceback.print_exc()
+            else:
+                print(f"Unknown command: {self.command}.")
+        # except Exception as e:
+        #     print(f"Ran into issue executing command: {e}.")
+        #     if self.config["print_stack_traces"]:
+        #         traceback.print_exc()

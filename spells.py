@@ -40,7 +40,8 @@ if cfg["load_previous_char"] and cache["character"]:
 
 context = context.Context(sb, cfg, c)
 if c is not None:
-    context.save_file = cache["character"]
+    context.save_file = cache.get("character", "")
+    context.save_files = cache.get("save_files", [])
 
 graceless = False  # allow ^C to exit if user has been warned
 while True:

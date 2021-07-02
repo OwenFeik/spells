@@ -371,12 +371,16 @@ def settings(context):
 
 
 def load(context):
-    path = context.raw_text.replace("load", "", 1).strip()
-
     try:
+        if context.arg_count():
+            path = context.raw_text.replace("load", "", 1).strip()
+        else:
+            path = cli.get_choice("Load which save?", context.save_files)
         data = dataloaders.load_character_from_path(path)
     except FileNotFoundError:
         print(f'Failed to load path "{path}".')
+        if path in context.save_files:
+            context.save_files.remove(path)
         return
 
     if context.character_check() and cli.get_decision(
