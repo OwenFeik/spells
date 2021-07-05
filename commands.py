@@ -427,7 +427,7 @@ def notes(context):
     cli.print_list(
         "Notes: ",
         [
-            n.partition("\n")[0] + cli.TRUNCATED if "\n" in n else n
+            n.partition("\n")[0] if "\n" in n else n
             for n in context.character.notes
         ],
         truncate_to=cli.get_width(context.config["use_full_width"]),
