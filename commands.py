@@ -113,7 +113,7 @@ def common_tracker_handling(context):
         print(f'Name "{name}" is a command and thus reserved.')
     elif name and name.isnumeric():
         print("Numbers are used to select options and thus reserved.")
-    elif (t := context.get_tracker(name)) :
+    elif t := context.get_tracker(name):
         if context.arg_count() > 1:
             print(t.handle_command(context))
         else:

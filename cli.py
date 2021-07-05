@@ -125,29 +125,6 @@ def print_prepped(char):
     return ("spell", opt)
 
 
-def print_chars():
-    chars = dataloaders.current_chars()
-    if chars:
-        char_string = ""
-        for i in range(len(chars)):
-            char_string += f"\n[{i+1}] {chars[i].get('name')} | "
-            first = True
-            for klasse in chars[i].get("classes"):
-                if not first:
-                    char_string += ", "
-                char_string += (
-                    utilities.capitalise(klasse.get("name"))
-                    + " "
-                    + klasse.get("level")
-                )
-                first = False
-        print(f"\nCharacters:\n{char_string}\n")
-        opt = [char.get("name").lower() for char in chars]
-        return ("char", opt)
-    else:
-        print("No characters saved.")
-
-
 def print_list(title, items, afterword="", truncate_to=None):
     print(f"\n{title}{':' if title[-1].isalpha() else ''}")
 
@@ -164,6 +141,25 @@ def print_list(title, items, afterword="", truncate_to=None):
     if afterword:
         print(f"\n{afterword}")
     print()
+
+
+def stringify_char(char):
+    string = char.get("name") + " | "
+    for klasse in char.get("classes"):
+        string += klasse.get("name") + " " + str(klasse.get("level")) + ", "
+    while not string[-1].isalnum():
+        string = string[:-1]
+    return string
+
+
+def print_chars():
+    chars = dataloaders.current_chars()
+    if chars:
+        print_list("Characters", (stringify_char(c) for c in chars))
+        opt = [char.get("name").lower() for char in chars]
+        return ("char", opt)
+    else:
+        print("No characters saved.")
 
 
 def get_input(prompt, split=False, default=None):

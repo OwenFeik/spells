@@ -130,6 +130,7 @@ def save_cache(path=None, save_files=None):
     with open(ensure_path(RESOURCE_DIR, RESOURCE_CACHE_FILE), "w") as f:
         json.dump({"character": path, "save_files": save_files or []}, f)
 
+
 def clear_cache():
     cache_path = os.path.join(get_real_path(RESOURCE_DIR), RESOURCE_CACHE_FILE)
     if os.path.exists(cache_path):

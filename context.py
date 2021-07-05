@@ -184,7 +184,7 @@ class Context:
         if self.command in commands.mapping:
             commands.mapping[self.command](self)
             return
-        elif (t := self.get_tracker(self.command)) :
+        elif t := self.get_tracker(self.command):
             if self.args:
                 print(t.handle_command(self))
             else:

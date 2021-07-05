@@ -144,7 +144,7 @@ class Char:
                     (level := Char.get_klasse_detail(klasse, 1))
                 )
 
-        if (message := self.trackers.level_up(self, level)) :
+        if message := self.trackers.level_up(self, level):
             print(message)
 
     def add_note(self, note):
@@ -164,7 +164,7 @@ class Char:
             "spell_slots_used": self.spell_slots_used,
             "prepared": [s.name for s in self.prepared],
             "trackers": self.trackers.to_json(),
-            "stats": self.stats.to_json() if self.stats is not None else None,
+            "stats": self._stats.to_json() if self._stats is not None else None,
             "notes": self.notes,
         }
 

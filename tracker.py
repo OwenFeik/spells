@@ -184,7 +184,7 @@ class TrackerCommand:
             and args[1].isnumeric()
         ):
             quantity = int(args[1])
-        elif (rolls := roll.get_rolls(" ".join(args), max_qty=1)) :
+        elif rolls := roll.get_rolls(" ".join(args), max_qty=1):
             quantity = rolls[0].total
         else:
             return TrackerCommand.MISSING_ARG_MESSAGE
@@ -343,7 +343,7 @@ class Tracker(AbstractTracker):
         self.quantity += quantity
         message = f"Added {quantity} to {self.name}. "
 
-        if (m := self.bounds_check()) :
+        if m := self.bounds_check():
             message += m
         else:
             message += f"Current value: {self.quantity}."
@@ -354,7 +354,7 @@ class Tracker(AbstractTracker):
         self.quantity -= quantity
         message = f"Took {quantity} from {self.name}. "
 
-        if (m := self.bounds_check()) :
+        if m := self.bounds_check():
             message += m
         else:
             message += f"Current value: {self.quantity}."
@@ -374,7 +374,7 @@ class Tracker(AbstractTracker):
 
         self.default = quantity
         message = f"Set default of {self.name} to {self.default}."
-        if (m := self.bounds_check(value=self.default)) :
+        if m := self.bounds_check(value=self.default):
             message += f" {m}"
         return message
 
@@ -383,7 +383,7 @@ class Tracker(AbstractTracker):
         self.quantity = quantity
         message = f"Set {self.name} to {quantity}{self.finish_delta(True)}."
 
-        if (m := self.bounds_check(enforce=False)) :
+        if m := self.bounds_check(enforce=False):
             message += f" {m}"
 
         return message
@@ -476,7 +476,7 @@ class TrackerCollection(AbstractTracker):
         if not names:
             return None
 
-        if (t := self.trackers.get(names[0])) :
+        if t := self.trackers.get(names[0]):
             if len(names) == 1:
                 return t
             elif isinstance(t, TrackerCollection):
@@ -514,7 +514,7 @@ class TrackerCollection(AbstractTracker):
     def level_up(self, character, level):
         message = ""
         for t in self.trackers.values():
-            if (m := t.level_up(character, level)) :
+            if m := t.level_up(character, level):
                 message += "\n" + m
 
         if message:
@@ -590,7 +590,7 @@ class CoinTracker(Tracker):
 
         scrubbed_args = []
         for arg in args:
-            if (m := re.match(fr"(?P<qty>\d+){self.name}", arg)) :
+            if m := re.match(fr"(?P<qty>\d+){self.name}", arg):
                 scrubbed_args.append(m.group("qty"))
             else:
                 scrubbed_args.append(arg)
@@ -914,7 +914,7 @@ class HitDieCollection(TrackerCollection):
             else:
                 trackers[i].heal(character)
 
-        if (m := self.finish_mutation(trackers)) :
+        if m := self.finish_mutation(trackers):
             return (
                 f"Spent {m}, regaining {self.hp_tracker.finish_delta()} hit"
                 f" points to {self.hp_tracker.quantity}."
@@ -937,7 +937,7 @@ class HitDieCollection(TrackerCollection):
             while i < len(trackers) and trackers[i].at_max:
                 i += 1
 
-        if (m := self.finish_mutation(trackers)) :
+        if m := self.finish_mutation(trackers):
             return f"Regained {m}."
 
     def get_tracker_from_die_size(self, size, create=True):
