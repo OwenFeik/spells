@@ -237,7 +237,7 @@ def character(context):
         return
 
     if context.character_check() and cli.get_decision(
-        "Current character: " f"{context.character.name}. Save this character?"
+        f"Current character: {context.character.name}. Save this character?"
     ):
 
         context.save()
@@ -246,6 +246,7 @@ def character(context):
         data = dataloaders.load_character(name)
         data.update({"sb": context.spellbook})
         context.character = char.Char.from_json(data)
+        context.save_file = None
         print(f"Character loaded: {str(context.character)}.")
     except FileNotFoundError:
         print(f"No character {name} found.")
@@ -401,6 +402,20 @@ def load_orcbrew(context):
     dataloaders.load_orcbrew(path, context.spellbook)
 
 
+def proficiency(context):
+    if not context.character_check(True):
+        return
+
+    print(context.character.skills.proficiency(context))
+
+
+def skill_check(context):
+    if not context.character_check(True):
+        return
+
+    print(context.character.skills.check(context))
+
+
 def stats(context):
     if not context.character_check(True):
         return
@@ -515,6 +530,10 @@ mapping = {
     "settings": settings,
     "load": load,
     "load_orcbrew": load_orcbrew,
+    "prof": proficiency,
+    "proficiency": proficiency,
+    "sc": skill_check,
+    "skillcheck": skill_check,
     "stats": stats,
     "notes": notes,
     "note": note,

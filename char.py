@@ -12,6 +12,7 @@ class Char:
     def __init__(self, **kwargs):
         self.name = kwargs.get("name", "temp")
         self.klasses = kwargs.get("classes", [])
+        self.skills = kwargs.get("skills", Skills())
         self.spell_slots_used = kwargs.get("spell_slots_used", [0] * 9)
 
         if "prepared" in kwargs:
@@ -59,6 +60,14 @@ class Char:
     @property
     def caster_level(self):
         return sum([int(k["caster"] * k["level"]) for k in self.klasses])
+
+    @property
+    def level(self):
+        return sum(k["level"] for k in self.klasses)
+
+    @property
+    def proficiency_bonus(self):
+        return (self.level - 1) // 4 + 2
 
     @property
     def spell_slots(self):
@@ -164,6 +173,7 @@ class Char:
             "spell_slots_used": self.spell_slots_used,
             "prepared": [s.name for s in self.prepared],
             "trackers": self.trackers.to_json(),
+            "skills": self.skills.to_json(),
             "stats": self._stats.to_json() if self._stats is not None else None,
             "notes": self.notes,
         }
@@ -199,6 +209,9 @@ class Char:
         except:
             print("Failed to parse stats information. Dropping stats.")
             del data["stats"]
+
+        if "skills" in data:
+            data["skills"] = Skills.from_json(data["skills"])
 
         return Char(**data)
 
@@ -277,8 +290,14 @@ class Char:
 
 
 class Stats:
+    STR = "str"
+    DEX = "dex"
+    CON = "con"
+    INT = "int"
+    WIS = "wis"
+    CHA = "cha"
     DEFAULT_VALUE = 10
-    DND_STATS = ["str", "dex", "con", "int", "wis", "cha"]
+    DND_STATS = [STR, DEX, CON, INT, WIS, CHA]
     DEFAULT_ROLL_FORMAT = "4d6k3"
 
     def __init__(self, **kwargs):
@@ -360,3 +379,158 @@ class Stats:
     @staticmethod
     def from_json(data):
         return Stats(**data)
+
+
+class Skill:
+    def __init__(
+        self, name, stat, alt_names=None, allow_prefix=True, proficient=False
+    ):
+        self.name = name
+        self.stat = stat
+
+        self.alt_names = alt_names or []
+        self.name_lower = self.name.lower()
+        if self.name_lower not in self.alt_names:
+            self.alt_names.append(self.name_lower)
+
+        self.allow_prefix = allow_prefix
+        self.proficient = proficient
+
+    def __repr__(self):
+        return (
+            f"<Skill name={self.name} stat={self.stat} "
+            f"alt_names={self.alt_names} allow_prefix={self.allow_prefix} "
+            f"proficient={self.proficient}>"
+        )
+
+    def __str__(self):
+        return self.name
+
+    def check(self, char, adv_str=None):
+        roll_string = f"d20"
+
+        if adv_str:
+            roll_string += adv_str
+
+        bonus = char.stats.get_mod(self.stat)
+        if self.proficient:
+            bonus += char.proficiency_bonus
+
+        if bonus:
+            roll_string += f" + {bonus}"
+
+        return str(roll.get_rolls(roll_string)[0])
+
+    def toggle_proficiency(self):
+        self.proficient = not self.proficient
+
+        if self.proficient:
+            return f"Now proficient in {self.name}."
+        else:
+            return f"No longer proficient in {self.name}."
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "stat": self.stat,
+            "alt_names": self.alt_names,
+            "allow_prefix": self.allow_prefix,
+            "proficient": self.proficient,
+        }
+
+    @staticmethod
+    def from_json(data):
+        name = data.pop("name")
+        stat = data.pop("stat")
+        return Skill(name, stat, **data)
+
+    @staticmethod
+    def default_skills():
+        return [
+            Skill("Athletics", Stats.STR, ["aths"]),
+            Skill("Acrobatics", Stats.DEX),
+            Skill("Sleight of Hand", Stats.DEX, ["soh"]),
+            Skill("Arcana", Stats.INT),
+            Skill("History", Stats.INT),
+            Skill("Investigation", Stats.INT),
+            Skill("Nature", Stats.INT),
+            Skill("Religion", Stats.INT, ["rlg", "rgn"]),
+            Skill("Animal Handling", Stats.WIS, ["ah"]),
+            Skill("Insight", Stats.WIS),
+            Skill("Medicine", Stats.WIS),
+            Skill("Perception", Stats.WIS),
+            Skill("Survival", Stats.WIS, ["sv"]),
+            Skill("Deception", Stats.CHA),
+            Skill("Intimidation", Stats.CHA),
+            Skill("Performance", Stats.CHA),
+            Skill("Persuasion", Stats.CHA),
+        ]
+
+
+class Skills:
+    def __init__(self, skills=None):
+        self.skills = skills or Skill.default_skills()
+
+    def find_skill(self, name):
+        name = name.lower()
+
+        for skill in self.skills:
+            if name in skill.alt_names:
+                return skill
+
+        return [
+            skill for skill in self.skills if skill.name_lower.startswith(name)
+        ] or None
+
+    def skill_from_context(self, context):
+        name = context.get_arg(0)
+        if name is None:
+            raise ValueError("Missing skill name argument.")
+
+        result = self.find_skill(name)
+        if result is None:
+            raise ValueError(f'No skill matching name "{name}" exists.')
+
+        # Returns either None, a list of matching Skills, or the single match
+        if isinstance(result, list):
+            if len(result) == 1:
+                skill = result[0]
+            else:
+                skill = cli.get_choice(
+                    "Multiple matching skills, which did you mean?",
+                    [r.name for r in result],
+                    result,
+                )
+        else:
+            skill = result
+
+        return skill
+
+    def check(self, context):
+        # Do this before parsing the result to save the user input if their
+        # adv_str is invalid.
+        adv_str = context.get_arg(1)
+        if adv_str:
+            adv_str = adv_str.lower()
+            if not all(c in ["a", "d"] for c in adv_str):
+                return 'Usage: "sc <skill_name> a" or "sc <skill_name> d".'
+
+        try:
+            return self.skill_from_context(context).check(
+                context.character, adv_str
+            )
+        except ValueError as e:
+            return str(e)
+
+    def proficiency(self, context):
+        try:
+            return self.skill_from_context(context).toggle_proficiency()
+        except ValueError as e:
+            return str(e)
+
+    def to_json(self):
+        return {"skills": [skill.to_json() for skill in self.skills]}
+
+    @staticmethod
+    def from_json(data):
+        return Skills([Skill.from_json(skill) for skill in data["skills"]])
