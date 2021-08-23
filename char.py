@@ -449,6 +449,7 @@ class Skill:
         return [
             Skill("Athletics", Stats.STR, ["aths"]),
             Skill("Acrobatics", Stats.DEX),
+            Skill("Stealth", Stats.DEX),
             Skill("Sleight of Hand", Stats.DEX, ["soh"]),
             Skill("Arcana", Stats.INT),
             Skill("History", Stats.INT),
