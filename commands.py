@@ -79,13 +79,17 @@ def roll_dice(context):
 
 
 def reroll(context):
+    if not isinstance(context.previous_roll, roll.RollExpr):
+        print("I don't know how to reroll bracketed expressions.")
+        return
+
     n = context.get_arg(0)
     if n.isnumeric():
         old_total = context.previous_roll.total
         context.previous_roll.reroll(int(n))
         delta = context.previous_roll.total - old_total
         delta_string = ("+" if delta > 0 else "") + str(delta)
-        print(str(context.previous_roll) + f" ({delta_string})")
+        print(context.previous_roll.full_str() + f" ({delta_string})")
     else:
         print('Usage: "reroll <number of dice>"')
 

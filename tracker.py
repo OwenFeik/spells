@@ -1028,7 +1028,7 @@ class HealthCollection(TrackerCollection):
 
         size = HealthCollection.get_hit_die_size(level)
         if cli.get_decision("Roll for hit point increase?"):
-            while (increase := roll.get_rolls(f"d{size}")[0].result) == 1:
+            while (increase := roll.get_result(f"d{size}")) == 1:
                 pass
         else:
             increase = HealthCollection.get_hit_die_average(size)
