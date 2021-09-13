@@ -305,6 +305,13 @@ def prepared(context):
         print('To prepare spells, start a character with "char".')
 
 
+def proficiencies(context):
+    if not context.character_check(True):
+        return
+
+    print(context.character.skills.skill_string())
+
+
 def proficiency(context):
     if not context.character_check(True):
         return
@@ -526,7 +533,9 @@ mapping = {
     "prepared": prepared,
     "prepped": prepared,
     "prof": proficiency,
+    "proficiencies": proficiencies,
     "proficiency": proficiency,
+    "profs": proficiencies,
     "rename": rename,
     "reroll": reroll,
     "rest": rest,

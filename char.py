@@ -469,6 +469,9 @@ class Skill:
 
 
 class Skills:
+    PROF_CHAR = "+"
+    NOT_CHAR = " "
+
     def __init__(self, skills=None):
         self.skills = skills or Skill.default_skills()
 
@@ -528,6 +531,20 @@ class Skills:
             return self.skill_from_context(context).toggle_proficiency()
         except ValueError as e:
             return str(e)
+
+    def skill_string(self):
+        string = "\n"
+        prev_stat = None
+        for skill in self.skills:
+            if skill.stat != prev_stat:
+                string += skill.stat.upper() + ":\n"
+                prev_stat = skill.stat
+
+            prof_char = (
+                Skills.PROF_CHAR if skill.proficient else Skills.NOT_CHAR
+            )
+            string += f"\t[{prof_char}] {skill.name}\n"
+        return string
 
     def to_json(self):
         return {"skills": [skill.to_json() for skill in self.skills]}
