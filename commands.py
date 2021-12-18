@@ -516,7 +516,7 @@ def update_possible():
     return True
 
 
-def update_required(context):
+def update_required(context=None):
     if not update_possible():
         return False
 
@@ -558,6 +558,7 @@ def update_app(context):
     os.chdir(dataloaders.get_app_dir())
 
     try:
+        print("Updating...")
         subprocess.run("git stash", check=True, shell=True)
         subprocess.run("git pull", check=True, shell=True)
         print("Updated successfully! Restart spells to apply.")
