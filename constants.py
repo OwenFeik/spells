@@ -60,10 +60,10 @@ KLASSE_HIT_DIE = {
 }
 
 DEFAULT_CONFIG = {
+    "check_for_updates": True,
+    "load_previous_char": True,
+    "note_editor_program": None,
     "print_spell_classes": True,
     "print_spell_rolls": True,
-    "load_previous_char": True,
     "use_full_width": False,
-    "print_stack_traces": False,
-    "note_editor_program": None,
 }

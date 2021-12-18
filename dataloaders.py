@@ -24,8 +24,12 @@ RESOURCE_CONFIG_FILE = "config.json"
 SAVES_DIR = "saves"
 
 
+def get_app_dir():
+    return os.path.dirname(__file__)
+
+
 def get_real_path(rel_path):
-    return os.path.join(os.path.dirname(__file__), rel_path)
+    return os.path.join(get_app_dir(), rel_path)
 
 
 def get_spellslots(level):

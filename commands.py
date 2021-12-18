@@ -1,5 +1,9 @@
 import os
-import re
+from re import sub
+import subprocess
+from sys import stdout
+from typing import final
+from edn_format.edn_parse import remove_tag
 
 import roll
 
@@ -502,6 +506,67 @@ def tracker_access(context):
         print(f"Created tracker {t.name}.")
 
 
+def update_possible():
+    if not utilities.program_available("git"):
+        print(
+            "git is required to update spells."
+            " Please install it and try again."
+        )
+        return False
+    return True
+
+
+def update_required(context):
+    if not update_possible():
+        return False
+
+    GET_LOCAL_COMMIT = "git rev-parse HEAD"
+    GET_REMOTE_COMMIT = "git rev-parse @{u}"
+
+    pwd = os.getcwd()
+    os.chdir(dataloaders.get_app_dir())
+
+    try:
+        print("Checking for updates...")
+        subprocess.run(
+            "git fetch", check=True, shell=True, stdout=subprocess.DEVNULL
+        )
+        result = utilities.exec_shell_stdout(
+            GET_LOCAL_COMMIT
+        ) != utilities.exec_shell_stdout(GET_REMOTE_COMMIT)
+    except subprocess.CalledProcessError:
+        print("Error checking for updates.")
+        result = False
+    finally:
+        os.chdir(pwd)
+
+        if result:
+            print("Update required.")
+        else:
+            print("Already update to date.")
+
+        return result
+
+
+def update_app(context):
+    if not update_possible():
+        return
+    if not update_required():
+        return
+
+    pwd = os.getcwd()
+    os.chdir(dataloaders.get_app_dir())
+
+    try:
+        subprocess.run("git stash", check=True, shell=True)
+        subprocess.run("git pull", check=True, shell=True)
+        print("Updated successfully! Restart spells to apply.")
+    except subprocess.CalledProcessError:
+        print("Error updating app.")
+    finally:
+        os.chdir(pwd)
+
+
 mapping = {
     "c": cast,
     "cast": cast,
@@ -552,4 +617,6 @@ mapping = {
     "t": tracker_access,
     "tc": tracker_collection,
     "tracker": tracker_access,
+    "update": update_app,
+    "update_check": update_required,
 }

@@ -1,6 +1,7 @@
 import os  # Clear screen
-import difflib  # Suggest similar commands
-import constants
+import difflib
+from re import sub  # Suggest similar commands
+import subprocess
 
 
 def printable_paragraph(string, width):
@@ -137,3 +138,35 @@ def punctuate_list(l):
     elif len(l):
         return l[0]
     return ""
+
+
+def exec_shell_stdout(command, check=True):
+    return subprocess.run(
+        command, capture_output=True, check=check, shell=True
+    ).stdout.decode()
+
+
+def exec_shell_returncode(command):
+    return subprocess.call(command, shell=True, stdout=subprocess.DEVNULL)
+
+
+def program_available(program):
+    # Source: https://stackoverflow.com/a/27394096
+    NT_CHECK_COMMAND = (
+        'cmd /c "(help {0} > nul || exit 0) && where {0} > nul 2> nul'
+    )
+
+    POSIX_CHECK_COMMAND = "command -v {}"
+
+    if os.name == "nt":
+        command = NT_CHECK_COMMAND
+    elif os.name == "posix":
+        command = POSIX_CHECK_COMMAND
+    else:
+        print("Unsupported operating system.")
+        return False
+
+    try:
+        return not exec_shell_returncode(command.format(program))
+    except:
+        return False

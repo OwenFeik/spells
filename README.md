@@ -254,3 +254,8 @@ reroll.
 
 * ```clear``` or ```cls``` will clear the screen.
 * ```settings``` will allow you to change some behaviours.
+
+Two commands are available which use `git` to check for updates to the app.
+
+* ```update_check``` checks if a new version is available.
+* ```update``` downloads a new version. 
