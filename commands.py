@@ -1,9 +1,5 @@
 import os
-from re import sub
 import subprocess
-from sys import stdout
-from typing import final
-from edn_format.edn_parse import remove_tag
 
 import roll
 
@@ -516,7 +512,8 @@ def update_possible():
     return True
 
 
-def update_required(context=None):
+# Needs to accept context so it can be called directly
+def update_required(_=None):
     if not update_possible():
         return False
 
@@ -548,7 +545,7 @@ def update_required(context=None):
         return result
 
 
-def update_app(context):
+def update_app():
     if not update_possible():
         return
     if not update_required():
@@ -566,6 +563,25 @@ def update_app(context):
         print("Error updating app.")
     finally:
         os.chdir(pwd)
+
+
+# Needs to accept context so it can be called directly
+def update_spells(context):
+    print("Downloading spell list...")
+    dataloaders.download_spells()
+    context.spellbook = spellbook.Spellbook()
+    print("Spell list updated.")
+
+
+def update(context):
+    if context.arg_count() == 0:
+        update_app()
+    elif context.get_arg(0) == "check":
+        update_required()
+    elif context.get_arg(0) == "spells":
+        update_spells(context)
+    else:
+        print("\nUsage:\n\tupdate\n\tupdate check\n\tupdate spells\n")
 
 
 mapping = {
@@ -618,6 +634,7 @@ mapping = {
     "t": tracker_access,
     "tc": tracker_collection,
     "tracker": tracker_access,
-    "update": update_app,
+    "update": update,
     "update_check": update_required,
+    "update_spells": update_spells,
 }

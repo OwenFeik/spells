@@ -257,5 +257,8 @@ reroll.
 
 Two commands are available which use `git` to check for updates to the app.
 
-* ```update_check``` checks if a new version is available.
 * ```update``` downloads a new version. 
+* ```update_check``` or ```update check``` checks if a new version is available.
+
+A third command ```update_spells``` (or ```update spells```) updates the apps
+spell list by downloading the default list again.

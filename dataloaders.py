@@ -49,19 +49,25 @@ def ensure_path(dir_name, file):
     return os.path.join(ensure_dir(dir_name), file)
 
 
-def get_spells(prompt_download=True):
-    spells_file = ensure_path(RESOURCE_DIR, RESOURCE_SPELLBOOK_FILE)
+def spells_file():
+    return ensure_path(RESOURCE_DIR, RESOURCE_SPELLBOOK_FILE)
 
-    if not os.path.exists(spells_file):
+
+def download_spells():
+    with urllib.request.urlopen(DEFAULT_SPELLBOOK_URL) as f:
+        data = f.read().decode("utf-8")
+        with open(spells_file(), "w") as f:
+            f.write(data)
+
+
+def get_spells(prompt_download=True):
+    if not os.path.exists(spells_file()):
         if prompt_download and cli.get_decision(
             "No spellbook found. Download default?"
         ):
-            with urllib.request.urlopen(DEFAULT_SPELLBOOK_URL) as f:
-                data = f.read().decode("utf-8")
-                with open(spells_file, "w") as f:
-                    f.write(data)
+            download_spells(True)
 
-    with open(spells_file, "r") as f:
+    with open(spells_file(), "r") as f:
         return json.load(f)
 
 
