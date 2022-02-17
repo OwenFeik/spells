@@ -419,7 +419,7 @@ class Skill:
         if bonus:
             roll_string += f" + {bonus}"
 
-        return str(roll.get_rolls(roll_string)[0])
+        return roll.rolls_string(roll.get_rolls(roll_string))
 
     def toggle_proficiency(self):
         self.proficient = not self.proficient
