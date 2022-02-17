@@ -590,7 +590,7 @@ class CoinTracker(Tracker):
 
         scrubbed_args = []
         for arg in args:
-            if m := re.match(fr"(?P<qty>\d+){self.name}", arg):
+            if m := re.match(rf"(?P<qty>\d+){self.name}", arg):
                 scrubbed_args.append(m.group("qty"))
             else:
                 scrubbed_args.append(arg)
