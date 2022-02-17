@@ -191,7 +191,11 @@ class Context:
                     print(t)
                 return
 
-            rolls = roll.get_rolls(self.raw_text)
+            
+            try:
+                rolls = roll.get_rolls(self.raw_text)
+            except:
+                rolls = None
             if rolls:
                 self.update_roll(rolls[-1])
                 print(roll.rolls_string(rolls))
