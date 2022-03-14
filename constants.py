@@ -65,5 +65,6 @@ DEFAULT_CONFIG = {
     "note_editor_program": None,
     "print_spell_classes": True,
     "print_spell_rolls": True,
+    "print_stack_traces": False,
     "use_full_width": False,
 }
