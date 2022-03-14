@@ -65,7 +65,7 @@ def get_spells(prompt_download=True):
         if prompt_download and cli.get_decision(
             "No spellbook found. Download default?"
         ):
-            download_spells(True)
+            download_spells()
 
     with open(spells_file(), "r") as f:
         return json.load(f)

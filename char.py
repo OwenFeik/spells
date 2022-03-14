@@ -16,7 +16,7 @@ class Char:
         self.spell_slots_used = kwargs.get("spell_slots_used", [0] * 9)
 
         if "prepared" in kwargs:
-            if "sb" in kwargs:
+            if kwargs.get("sb"):
                 self.prepared = [
                     kwargs["sb"].get_spell(s)
                     for s in kwargs.get("prepared", [])
