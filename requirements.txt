@@ -1,2 +1,2 @@
-git+git://github.com/OwenFeik/roll.git#egg=roll
+git+https://github.com/OwenFeik/roll.git#egg=roll
 edn-format
