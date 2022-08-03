@@ -416,8 +416,10 @@ class Skill:
         if self.proficient:
             bonus += char.proficiency_bonus
 
-        if bonus:
+        if bonus > 0:
             roll_string += f" + {bonus}"
+        elif bonus < 0:
+            roll_string += f" {bonus}"
 
         return roll.rolls_string(roll.get_rolls(roll_string))
 
