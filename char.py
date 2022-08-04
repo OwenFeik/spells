@@ -382,8 +382,19 @@ class Stats:
 
 
 class Skill:
+    PROF_CHAR = "+"
+    EXP_CHAR = "!"
+    NOT_CHAR = " "
+
     def __init__(
-        self, name, stat, alt_names=None, allow_prefix=True, proficient=False
+        self,
+        name,
+        stat,
+        alt_names=None,
+        allow_prefix=True,
+        proficient=False,
+        expertise=False,
+        special=False,
     ):
         self.name = name
         self.stat = stat
@@ -395,6 +406,8 @@ class Skill:
 
         self.allow_prefix = allow_prefix
         self.proficient = proficient
+        self.expertise = expertise
+        self.special = special
 
     def __repr__(self):
         return (
@@ -404,7 +417,15 @@ class Skill:
         )
 
     def __str__(self):
-        return self.name
+        return self.skill_str()
+
+    def skill_str(self):
+        prof_char = (
+            (Skill.EXP_CHAR if self.expertise else Skill.PROF_CHAR)
+            if self.proficient
+            else Skill.NOT_CHAR
+        )
+        return f"[{prof_char}] {self.name}"
 
     def check(self, char, adv_str=None):
         roll_string = f"d20"
@@ -415,21 +436,36 @@ class Skill:
         bonus = char.stats.get_mod(self.stat)
         if self.proficient:
             bonus += char.proficiency_bonus
+        if self.expertise:
+            bonus += char.proficiency_bonus
 
         if bonus > 0:
             roll_string += f" + {bonus}"
         elif bonus < 0:
             roll_string += f" {bonus}"
 
-        return roll.rolls_string(roll.get_rolls(roll_string))
+        return f"{self.name} check:\n" + roll.rolls_string(
+            roll.get_rolls(roll_string)
+        )
 
     def toggle_proficiency(self):
         self.proficient = not self.proficient
-
         if self.proficient:
             return f"Now proficient in {self.name}."
         else:
+            self.expertise = False
             return f"No longer proficient in {self.name}."
+
+    def toggle_expertise(self):
+        if self.expertise:
+            self.expertise = False
+            if self.proficient:
+                return f"Now only proficient in {self.name}."
+            else:
+                return f"No longer an expert in {self.name}."
+        else:
+            self.expertise = self.proficient = True
+            return f"Now an expert in {self.name}."
 
     def to_json(self):
         return {
@@ -438,6 +474,8 @@ class Skill:
             "alt_names": self.alt_names,
             "allow_prefix": self.allow_prefix,
             "proficient": self.proficient,
+            "expertise": self.expertise,
+            "special": self.special,
         }
 
     @staticmethod
@@ -449,20 +487,20 @@ class Skill:
     @staticmethod
     def default_skills():
         return [
-            Skill("Athletics", Stats.STR, ["aths"]),
+            Skill("Athletics", Stats.STR, alt_names=["aths"]),
             Skill("Acrobatics", Stats.DEX),
             Skill("Stealth", Stats.DEX),
-            Skill("Sleight of Hand", Stats.DEX, ["soh"]),
+            Skill("Sleight of Hand", Stats.DEX, alt_names=["soh"]),
             Skill("Arcana", Stats.INT),
             Skill("History", Stats.INT),
             Skill("Investigation", Stats.INT),
             Skill("Nature", Stats.INT),
-            Skill("Religion", Stats.INT, ["rlg", "rgn"]),
-            Skill("Animal Handling", Stats.WIS, ["ah"]),
+            Skill("Religion", Stats.INT, alt_names=["rlg", "rgn"]),
+            Skill("Animal Handling", Stats.WIS, alt_names=["ah"]),
             Skill("Insight", Stats.WIS),
             Skill("Medicine", Stats.WIS),
             Skill("Perception", Stats.WIS),
-            Skill("Survival", Stats.WIS, ["sv"]),
+            Skill("Survival", Stats.WIS, alt_names=["sv"]),
             Skill("Deception", Stats.CHA),
             Skill("Intimidation", Stats.CHA),
             Skill("Performance", Stats.CHA),
@@ -471,9 +509,6 @@ class Skill:
 
 
 class Skills:
-    PROF_CHAR = "+"
-    NOT_CHAR = " "
-
     def __init__(self, skills=None):
         self.skills = skills or Skill.default_skills()
 
@@ -528,25 +563,94 @@ class Skills:
         except ValueError as e:
             return str(e)
 
-    def proficiency(self, context):
+    def proficiency(self, context, expertise=False):
         try:
-            return self.skill_from_context(context).toggle_proficiency()
+            skill = self.skill_from_context(context)
+            if expertise:
+                return skill.toggle_expertise()
+            else:
+                return skill.toggle_proficiency()
         except ValueError as e:
             return str(e)
 
     def skill_string(self):
-        string = "\n"
-        prev_stat = None
-        for skill in self.skills:
-            if skill.stat != prev_stat:
-                string += skill.stat.upper() + ":\n"
-                prev_stat = skill.stat
+        def _skill_string(skills):
+            string = "\n"
+            prev_stat = None
+            for skill in skills:
+                if skill.stat != prev_stat:
+                    string += skill.stat.upper() + ":\n"
+                    prev_stat = skill.stat
+                string += f"\t{skill}\n"
+            return string
 
-            prof_char = (
-                Skills.PROF_CHAR if skill.proficient else Skills.NOT_CHAR
-            )
-            string += f"\t[{prof_char}] {skill.name}\n"
+        normal = []
+        special = []
+        for skill in self.skills:
+            if skill.special:
+                special.append(skill)
+            else:
+                normal.append(skill)
+
+        string = _skill_string(normal)
+        if special:
+            string += "\nSpecial:\n" + _skill_string(special)
+
         return string
+
+    def sort_skills(self):
+        # Order skills in the traditional stat order, then alphabetically
+        # within stat.
+        stat_mapping = {
+            Stats.STR: "0",
+            Stats.DEX: "1",
+            Stats.CON: "2",
+            Stats.INT: "3",
+            Stats.WIS: "4",
+            Stats.CHA: "5",
+        }
+
+        self.skills.sort(
+            key=lambda skill: stat_mapping[skill.stat] + skill.name.lower()
+        )
+
+    def new_skill(self, name):
+        stat = cli.get_choice(
+            f'Which stat is "{name}" associated with?',
+            list(map(lambda s: s.upper(), Stats.DND_STATS)),
+            Stats.DND_STATS,
+        )
+        special = cli.get_decision(
+            "Display this skill seperately from the default set?"
+        )
+        self.skills.append(Skill(name, stat, special=special))
+        self.sort_skills()
+        return f'Added skill "{name}".'
+
+    def delete_skill(self, context):
+        try:
+            skill = self.skill_from_context(context)
+        except ValueError as e:
+            return e
+
+        self.skills.remove(skill)
+        return f'Deleted skill "{skill.name}".'
+
+    def add_skill_alt(self, context):
+        try:
+            skill = self.skill_from_context(context)
+        except ValueError as e:
+            return e
+
+        alt = cli.get_input(f"Shortcut name for {skill.name}", split=True)[
+            0
+        ].lower()
+        existing = self.find_skill(alt)
+        if existing:
+            return f'"{alt}" already points to "{existing.name}".'
+
+        skill.alt_names.append(alt)
+        return f'Added "{alt}" as a shortcut for "{skill.name}".'
 
     def to_json(self):
         return {"skills": [skill.to_json() for skill in self.skills]}

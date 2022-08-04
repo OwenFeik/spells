@@ -1,4 +1,5 @@
 import traceback
+from typing import Any, List, Tuple
 
 import roll
 
@@ -68,14 +69,16 @@ class Context:
             self.save_file = dataloaders.save_character(
                 self.character, self.save_file
             )
-            if not self.save_file in self.save_files:
+            if (not self.save_file in self.save_files) and (
+                not dataloaders.in_saves_dir(self.save_file)
+            ):
                 self.save_files.append(self.save_file)
             dataloaders.save_cache(self.save_file, self.save_files)
         else:
             dataloaders.save_cache(save_files=self.save_files)
         dataloaders.save_config(self.config)
 
-    def update_options(self, option_tuple):
+    def update_options(self, option_tuple: Tuple[str, List[Any]]):
         if option_tuple is None:
             return
 
@@ -166,8 +169,8 @@ class Context:
                     option = self.options[index]
                     if self.option_mode == "spell":
                         self.get_input(string=f"info {option}")
-                    elif self.option_mode == "char":
-                        self.get_input(string=f"char {option}")
+                    elif self.option_mode == "save":
+                        self.get_input(string=f"load {option}")
                     elif self.option_mode == "roll":
                         self.get_input(string=option)
                     elif self.option_mode == "note":

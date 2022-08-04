@@ -1,8 +1,10 @@
+from ast import expr_context
 import importlib
 import json
 import os
 import subprocess
 import sys
+from typing import List, Optional, Tuple
 import urllib.request
 
 import cli
@@ -24,19 +26,48 @@ RESOURCE_CONFIG_FILE = "config.json"
 SAVES_DIR = "saves"
 
 
-def get_app_dir():
+class SaveFile:
+    def __init__(self, path: str) -> None:
+        self.path: str = path
+        data = load_character_from_path(path)
+        self.name: str = data["name"]
+        self.klasses: List[str] = []
+        for klasse in data.get("classes", []):
+            self.klasses.append(
+                klasse.get("name").capitalize() + " " + str(klasse.get("level"))
+            )
+
+    def __str__(self) -> str:
+        string = self.name.capitalize()
+        klasse_string = self.klasse_str()
+        if klasse_string:
+            string += " | " + klasse_string
+
+        return f"{string}\t({self.path})"
+
+    def full_path(self) -> str:
+        if self.path.startswith("saves/"):
+            return get_real_path(self.path)
+        else:
+            return self.path
+
+    def klasse_str(self) -> str:
+        return ", ".join(self.klasses)
+
+
+def get_app_dir() -> str:
     return os.path.dirname(__file__)
 
 
-def get_real_path(rel_path):
+def get_real_path(rel_path: str) -> str:
     return os.path.join(get_app_dir(), rel_path)
 
 
-def get_spellslots(level):
+def get_spellslots(level: int) -> List[int]:
     return constants.SPELLSLOTS[level]
 
 
-def ensure_dir(name):
+def ensure_dir(name: str) -> str:
     dir_path = get_real_path(name)
 
     if not os.path.exists(dir_path):
@@ -45,15 +76,15 @@ def ensure_dir(name):
     return dir_path
 
 
-def ensure_path(dir_name, file):
+def ensure_path(dir_name: str, file: str) -> str:
     return os.path.join(ensure_dir(dir_name), file)
 
 
-def spells_file():
+def spells_file() -> str:
     return ensure_path(RESOURCE_DIR, RESOURCE_SPELLBOOK_FILE)
 
 
-def download_spells():
+def download_spells() -> None:
     with urllib.request.urlopen(DEFAULT_SPELLBOOK_URL) as f:
         data = f.read().decode("utf-8")
         with open(spells_file(), "w") as f:
@@ -87,6 +118,12 @@ def save_character(char, path=None):
     return path
 
 
+def in_saves_dir(file_path: str) -> bool:
+    return file_path.startswith("saves/") or os.path.samefile(
+        get_real_path(SAVES_DIR), os.path.dirname(get_real_path(file_path))
+    )
+
+
 def delete_character(char):
     char_file = ensure_path(SAVES_DIR, f"{char.lower()}.json")
     if os.path.exists(char_file):
@@ -107,19 +144,25 @@ def load_character_from_path(path):
     raise FileNotFoundError
 
 
-def current_chars():
-    saves = os.listdir(get_real_path(SAVES_DIR))
-    chars = []
-    for save in saves:
-        if ".json" in save:
-            with open(ensure_path(SAVES_DIR, save), "r") as f:
-                chars.append(json.load(f))
-    return chars
+def current_chars(save_files: Optional[List[str]] = None) -> List[SaveFile]:
+    saves = []
+
+    save_files = save_files[:] or []
+    save_files.extend(
+        map(lambda f: f"saves/{f}", os.listdir(get_real_path(SAVES_DIR)))
+    )
+    for path in save_files:
+        try:
+            saves.append(SaveFile(path))
+        except (KeyError, json.JSONDecodeError):
+            if cli.get_decision(f"Corrupted save file: {path}, delete?"):
+                os.remove(get_real_path(path))
+
+    return saves
 
 
-def save_exists(name):
-    names = [c["name"] for c in current_chars()]
-    return name.lower() in names
+def save_exists(name: str) -> bool:
+    return name.lower() in [save.name.lower() for save in current_chars()]
 
 
 def get_cache():

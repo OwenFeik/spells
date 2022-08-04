@@ -11,12 +11,21 @@ import spellbook
 import tracker
 import utilities
 
+
+# Decorator for functions which require an active character to work.
+def needschar(func):
+    def f(context, *args):
+        if not context.character_check(True):
+            return
+        return func(context, *args)
+
+    return f
+
+
 # Returns the name of the tracker being handled, or None if no further
 # processing should occur.
+@needschar
 def common_tracker_handling(context):
-    if not context.character_check(True):
-        return
-
     name = context.get_arg(0)
     if name in mapping:
         print(f'Name "{name}" is a command and thus reserved.')
@@ -90,7 +99,12 @@ def character(context):
 
 
 def characters(context):
-    context.update_options(cli.print_chars())
+    chars = dataloaders.current_chars(context.save_files)
+    if chars:
+        cli.print_list("Characters", map(str, chars))
+        context.update_options(("save", [char.full_path() for char in chars]))
+    else:
+        print("No characters saved.")
 
 
 def clear_screen(_):
@@ -119,6 +133,11 @@ def tracker_collection(context):
 
 def delchar(context):
     dataloaders.delete_character(utilities.capitalise(context.arg_text))
+
+
+@needschar
+def delskill(context):
+    print(context.character.skills.delete_skill(context))
 
 
 def deltracker(context):
@@ -165,6 +184,11 @@ def exit_app(context):
         context.save()
 
     raise SystemExit
+
+
+@needschar
+def expertise(context):
+    print(context.character.skills.proficiency(context, expertise=True))
 
 
 def info(context):
@@ -231,10 +255,18 @@ def newchar(context):
     context.set_char(char.Char.from_wizard(), save_check=True)
 
 
-def note(context):
-    if not context.character_check(True):
+@needschar
+def newskill(context):
+    name = context.arg_text
+    if not name:
+        print("Usage: newskill <name>")
         return
 
+    print(context.character.skills.new_skill(name))
+
+
+@needschar
+def note(context):
     if context.arg_count() == 1 and context.get_arg(0).isnumeric():
         if len(context.character.notes) >= (i := int(context.get_arg(0)) - 1):
             print(context.character.notes[i])
@@ -282,11 +314,8 @@ def notes(context):
     context.update_options(("note", context.character.notes))
 
 
+@needschar
 def prepare(context):
-    if not context.character_check(True):
-        print('To prepare spells, start a character with "char".')
-        return
-
     if not context.has_args():
         print('Usage: "p <spell>".')
         return
@@ -305,17 +334,13 @@ def prepared(context):
         print('To prepare spells, start a character with "char".')
 
 
+@needschar
 def proficiencies(context):
-    if not context.character_check(True):
-        return
-
     print(context.character.skills.skill_string())
 
 
+@needschar
 def proficiency(context):
-    if not context.character_check(True):
-        return
-
     print(context.character.skills.proficiency(context))
 
 
@@ -423,10 +448,13 @@ def settings(context):
         context.update_options(("setting", options))
 
 
-def skill_check(context):
-    if not context.character_check(True):
-        return
+@needschar
+def skill_alt(context):
+    print(context.character.skills.add_skill_alt(context))
 
+
+@needschar
+def skill_check(context):
     print(context.character.skills.check(context))
 
 
@@ -437,10 +465,8 @@ def slots(context):
         print('No current character. Start one with "char".')
 
 
+@needschar
 def stats(context):
-    if not context.character_check(True):
-        return
-
     if context.character.stats is None:
         if cli.get_decision(
             f"{context.character.name} has no stats. Add them?"
@@ -596,9 +622,12 @@ mapping = {
     "cls": clear_screen,
     "collection": tracker_collection,
     "delchar": delchar,
+    "delskill": delskill,
     "deltracker": deltracker,
     "dt": deltracker,
     "exit": exit_app,
+    "exp": expertise,
+    "expertise": expertise,
     "i": info,
     "info": info,
     "level": level_up,
@@ -606,6 +635,7 @@ mapping = {
     "load": load,
     "load_orcbrew": load_orcbrew,
     "newchar": newchar,
+    "newskill": newskill,
     "note": note,
     "notes": notes,
     "p": prepare,
@@ -628,6 +658,7 @@ mapping = {
     "sc": skill_check,
     "search": search,
     "settings": settings,
+    "skillalt": skill_alt,
     "skillcheck": skill_check,
     "slots": slots,
     "stats": stats,

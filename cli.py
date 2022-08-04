@@ -143,25 +143,6 @@ def print_list(title, items, afterword="", truncate_to=None):
     print()
 
 
-def stringify_char(char):
-    string = char.get("name") + " | "
-    for klasse in char.get("classes"):
-        string += klasse.get("name") + " " + str(klasse.get("level")) + ", "
-    while not string[-1].isalnum():
-        string = string[:-1]
-    return string
-
-
-def print_chars():
-    chars = dataloaders.current_chars()
-    if chars:
-        print_list("Characters", (stringify_char(c) for c in chars))
-        opt = [char.get("name").lower() for char in chars]
-        return ("char", opt)
-    else:
-        print("No characters saved.")
-
-
 def get_input(prompt, split=False, default=None):
     p = prompt
     if default is not None:
