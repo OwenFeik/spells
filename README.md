@@ -248,7 +248,7 @@ return the sum of the two highest rolls as the result.
 
 Some examples:
 
-`
+```
 > roll 6 4d6k3
 4d6 keep 3      Rolls: 2, 6, 4, 2       Total: 12
 4d6 keep 3      Rolls: 4, 3, 2, 3       Total: 10
@@ -261,17 +261,17 @@ Grand Total: 71
 d20a + 3        Rolls: 16, 4    Total: 19
 > roll 2 * 2d10
 2d10 * 2        Rolls: 5, 5     Total: 20
-`
+```
 
 Once you've rolled dice, you can use the `reroll` (or `rr`) command to
 reroll them, such as for the Sorcerer "Empowered Spell" feature.
 
-`
+```
 > 8d6
 Rolls: 3, 3, 5, 6, 4, 6, 1, 6   Total: 34
 > rr 3
 Rolls: 5, 5, 5, 6, 4, 6, 6, 6   Total: 43 (+9)
-`
+```
 
 The format to reroll is `rr <n>` where `n` is the number of die to reroll.
 
