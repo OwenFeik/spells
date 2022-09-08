@@ -157,6 +157,8 @@ def current_chars(save_files: Optional[List[str]] = None) -> List[SaveFile]:
         except (KeyError, json.JSONDecodeError):
             if cli.get_decision(f"Corrupted save file: {path}, delete?"):
                 os.remove(get_real_path(path))
+        except FileNotFoundError:
+            pass
 
     return saves
 
