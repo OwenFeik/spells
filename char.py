@@ -317,8 +317,11 @@ class Stats:
     def __str__(self):
         return self.indented_string()
 
-    def get_mod(self, mod_name):
-        return (getattr(self, mod_name.lower()) - 10) // 2
+    def __getitem__(self, key):
+        return getattr(self, key.lower())
+
+    def mod(self, mod_name):
+        return (self[mod_name.lower()] - 10) // 2
 
     def set_stat(self, stat, value):
         setattr(self, stat.lower(), value)
@@ -429,13 +432,31 @@ class Skill:
     def __str__(self):
         return self.skill_str()
 
-    def skill_str(self):
+    def prof_str(self):
         prof_char = (
             (Skill.EXP_CHAR if self.expertise else Skill.PROF_CHAR)
             if self.proficient
             else Skill.NOT_CHAR
         )
-        return f"[{prof_char}] {self.name}"
+        return f"[{prof_char}]"
+
+    def mod_str(self, char):
+        return utilities.mod_str(self.bonus(char))
+
+    def skill_str(self, char=None):
+        string = f"{self.prof_str()} {self.name}"
+        if char:
+            string += f" ({self.mod_str(char)})"
+        return string
+
+    def bonus(self, char):
+        bonus = char.stats.mod(self.stat)
+        if self.proficient:
+            bonus += char.proficiency_bonus
+        if self.expertise:
+            bonus += char.proficiency_bonus
+
+        return bonus
 
     def check(self, char, adv_str=None):
         roll_string = f"d20"
@@ -443,11 +464,7 @@ class Skill:
         if adv_str:
             roll_string += adv_str
 
-        bonus = char.stats.get_mod(self.stat)
-        if self.proficient:
-            bonus += char.proficiency_bonus
-        if self.expertise:
-            bonus += char.proficiency_bonus
+        bonus = self.bonus(char)
 
         if bonus > 0:
             roll_string += f" + {bonus}"
@@ -583,16 +600,19 @@ class Skills:
         except ValueError as e:
             return str(e)
 
-    def skill_string(self):
-        def _skill_string(skills):
-            string = "\n"
+    def skill_string(self, char):
+        table = []
+
+        def add_table_rows(skills):
             prev_stat = None
             for skill in skills:
                 if skill.stat != prev_stat:
-                    string += skill.stat.upper() + ":\n"
+                    mod = utilities.mod_str(char.stats.mod(skill.stat))
+                    table.append(f"{skill.stat.upper()} ({mod})")
                     prev_stat = skill.stat
-                string += f"\t{skill}\n"
-            return string
+                table.append(
+                    [skill.prof_str(), skill.name, f"({skill.mod_str(char)})"]
+                )
 
         normal = []
         special = []
@@ -602,11 +622,11 @@ class Skills:
             else:
                 normal.append(skill)
 
-        string = _skill_string(normal)
-        if special:
-            string += "\nSpecial:\n" + _skill_string(special)
+        add_table_rows(normal)
+        table.append("\nSpecial:")
+        add_table_rows(special)
 
-        return string
+        return "\n" + cli.format_table(table, "\t")
 
     def sort_skills(self):
         # Order skills in the traditional stat order, then alphabetically

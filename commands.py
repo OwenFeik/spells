@@ -367,7 +367,7 @@ def prepared(context):
 
 @needschar
 def proficiencies(context):
-    print(context.character.skills.skill_string())
+    print(context.character.skills.skill_string(context.character))
 
 
 @needschar

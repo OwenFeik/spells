@@ -845,7 +845,7 @@ class HitDieTracker(Tracker):
                 return
 
         if character.stats:
-            mod = character.stats.get_mod("con")
+            mod = character.stats.mod("con")
         else:
             mod = cli.get_integer(
                 f"{character.name} doesn't have stats."
@@ -1016,7 +1016,7 @@ class HealthCollection(TrackerCollection):
                     quantity += (
                         HealthCollection.get_hit_die_average(size) * levels
                     )
-                    quantity += char.stats.get_mod("con") * k["level"]
+                    quantity += char.stats.mod("con") * k["level"]
 
                 self.hp.quantity = self.hp.maximum = self.hp.default = quantity
 
@@ -1032,7 +1032,7 @@ class HealthCollection(TrackerCollection):
                 pass
         else:
             increase = HealthCollection.get_hit_die_average(size)
-        increase += character.stats.get_mod("con")
+        increase += character.stats.mod("con")
         self.hp.maximum += increase
 
         m = f"Maximum hit points increased by {increase}."

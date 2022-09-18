@@ -229,3 +229,32 @@ def get_text_editor(default="", editor=None):
         return get_text_editor_posix(default, editor)
     elif os.name == "nt":
         return get_text_editor_nt(default, editor)
+
+
+def format_table(rows, start_line=""):
+    # rows is a list like [[str] | str] where the strings are headings
+    if not rows:
+        return ""
+
+    cols = None
+    for row in rows:
+        if not isinstance(row, list):
+            continue
+        if not cols:
+            cols = [0 for _ in row]
+        for (i, col) in enumerate(row):
+            cols[i] = max(cols[i], len(col))
+
+    table = ""
+    for row in rows:
+        if isinstance(row, str):
+            table += row + "\n"
+        else:
+            table += (
+                start_line
+                + " ".join(
+                    [col.ljust(cols[i], " ") for (i, col) in enumerate(row)]
+                )
+                + "\n"
+            )
+    return table

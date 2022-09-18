@@ -170,3 +170,10 @@ def program_available(program):
         return not exec_shell_returncode(command.format(program))
     except:
         return False
+
+
+def mod_str(mod):
+    if mod > 0:
+        return f"+{mod}"
+    else:
+        return str(mod)
