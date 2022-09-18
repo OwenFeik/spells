@@ -166,6 +166,16 @@ class Char:
         self.remove_note(index)
         self.notes.insert(index, new)
 
+    def move_note_up(self, index):
+        if index > 0:
+            ns = self.notes
+            ns[index - 1], ns[index] = ns[index], ns[index - 1]
+
+    def move_note_down(self, index):
+        if index < len(self.notes) - 1:
+            ns = self.notes
+            ns[index + 1], ns[index] = ns[index], ns[index + 1]
+
     def to_json(self):
         return {
             "name": self.name,

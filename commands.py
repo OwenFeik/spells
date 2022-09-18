@@ -270,12 +270,12 @@ def note(context):
     if context.arg_count() == 1 and context.get_arg(0).isnumeric():
         if len(context.character.notes) >= (i := int(context.get_arg(0)) - 1):
             print(context.character.notes[i])
-            print("\n[1] Edit [2] Delete")
-            context.update_options(
+
+            options = [
                 (
-                    "func",
-                    [
-                        lambda: context.character.replace_note(
+                    "Edit",
+                    lambda: (
+                        context.character.replace_note(
                             i, t  # pylint: disable=undefined-variable
                         )
                         if (
@@ -284,11 +284,42 @@ def note(context):
                                 editor=context.config["note_editor_program"],
                             ).strip()
                         )
-                        else None,
-                        lambda: context.character.remove_note(i),
-                    ],
+                        else None
+                    ),
+                ),
+                (
+                    "Delete",
+                    lambda: context.character.remove_note(i),
+                ),
+            ]
+
+            if i > 0:
+                options.append(
+                    (
+                        "Move Up",
+                        lambda: (
+                            context.character.move_note_up(i),
+                            notes(context),
+                        ),
+                    )
                 )
+
+            if i < len(context.character.notes) - 1:
+                options.append(
+                    (
+                        "Move Down",
+                        lambda: (
+                            context.character.move_note_down(i),
+                            notes(context),
+                        ),
+                    )
+                )
+
+            print(
+                "\n"
+                + " ".join(f"[{i + 1}] {k}" for i, (k, _) in enumerate(options))
             )
+            context.update_options(("func", list(f for _, f in options)))
         else:
             print(
                 f"You only have {len(context.character.notes)} notes"
