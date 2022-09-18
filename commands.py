@@ -419,27 +419,37 @@ def rest(context):
         print('To rest, start or load a character with "char".')
 
 
+@needschar
+def roll_stats(context):
+    if context.get_arg(1) == "clear":
+        context.character.roll_history = char.RollHistory()
+        print(f"Cleared roll stats for {context.character.name}.")
+        return
+
+    start = time.time()
+    unit = context.get_arg(1)
+    if unit == "day":
+        start -= 60 * 60 * 24
+    elif unit == "week":
+        start -= 60 * 60 * 24 * 7
+    elif unit == "month":
+        start -= 60 * 60 * 24 * 7
+    elif unit == "year":
+        start -= 60 * 60 * 24 * 365
+    else:
+        if unit:
+            print(
+                f'Available units: day, week, month or year. "{unit}" is'
+                " invalid. Defaulting to all rolls."
+            )
+        start = 0
+
+    print(context.character.roll_history.stat_string(start))
+
+
 def roll_dice(context):
     if context.get_arg(0) == "stats":
-        start = time.time()
-        unit = context.get_arg(1)
-        if unit == "day":
-            start -= 60 * 60 * 24
-        elif unit == "week":
-            start -= 60 * 60 * 24 * 7
-        elif unit == "month":
-            start -= 60 * 60 * 24 * 7
-        elif unit == "year":
-            start -= 60 * 60 * 24 * 365
-        else:
-            if unit:
-                print(
-                    f'Available units: day, week, month or year. "{unit}" is'
-                    " invalid. Defaulting to all rolls."
-                )
-            start = 0
-
-        print(context.character.roll_history.stat_string(start))
+        roll_stats(context)
         return
 
     try:

@@ -283,6 +283,7 @@ alongside that character, to enable the following `stats` commands.
 * `roll stats <period>` where `<period>` is one of `day`, `week`, `month` or
     `year`, which will do the same but limiting to rolls from the past day,
     week, etc.
+* `roll stats clear` will clear all stored stats.
 
 ### Other
 
