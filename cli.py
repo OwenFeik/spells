@@ -245,7 +245,7 @@ def format_table(rows, start_line=""):
         for (i, col) in enumerate(row):
             cols[i] = max(cols[i], len(col))
 
-    table = ""
+    table = "\n"
     for row in rows:
         if isinstance(row, str):
             table += row + "\n"

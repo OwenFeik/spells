@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 
 import roll
 
@@ -419,7 +420,37 @@ def rest(context):
 
 
 def roll_dice(context):
-    rolls = roll.get_rolls(context.arg_text)
+    if context.get_arg(0) == "stats":
+        start = time.time()
+        unit = context.get_arg(1)
+        if unit == "day":
+            start -= 60 * 60 * 24
+        elif unit == "week":
+            start -= 60 * 60 * 24 * 7
+        elif unit == "month":
+            start -= 60 * 60 * 24 * 7
+        elif unit == "year":
+            start -= 60 * 60 * 24 * 365
+        else:
+            if unit:
+                print(
+                    f'Available units: day, week, month or year. "{unit}" is'
+                    " invalid. Defaulting to all rolls."
+                )
+            start = 0
+
+        print(context.character.roll_history.stat_string(start))
+        return
+
+    try:
+        if context.character_check():
+            rolls = context.character.roll(context.arg_text)
+        else:
+            rolls = roll.get_rolls(context.arg_text)
+    except ValueError as e:
+        print(f"Bad roll syntax: {e}")
+        return
+
     if rolls:
         print(roll.rolls_string(rolls))
         context.update_roll(rolls[-1])

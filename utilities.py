@@ -174,6 +174,6 @@ def program_available(program):
 
 def mod_str(mod):
     if mod > 0:
-        return f"+{mod}"
+        return f"(+{mod})"
     else:
-        return str(mod)
+        return f"({mod})"

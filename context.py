@@ -195,8 +195,12 @@ class Context:
                 return
 
             try:
-                rolls = roll.get_rolls(self.raw_text)
-            except:
+                if self.character_check():
+                    rolls = self.character.roll(self.raw_text)
+                else:
+                    rolls = roll.get_rolls(self.raw_text)
+            except Exception as e:
+                print(e)
                 rolls = None
 
             if rolls:

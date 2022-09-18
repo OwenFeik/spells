@@ -275,6 +275,15 @@ Rolls: 5, 5, 5, 6, 4, 6, 6, 6   Total: 43 (+9)
 
 The format to reroll is `rr <n>` where `n` is the number of die to reroll.
 
+If you have an active character when rolling dice, the roll results are stored
+alongside that character, to enable the following `stats` commands.
+
+* `roll stats` which will print out the average results for each of the common
+    RPG dice.
+* `roll stats <period>` where `<period>` is one of `day`, `week`, `month` or
+    `year`, which will do the same but limiting to rolls from the past day,
+    week, etc.
+
 ### Other
 
 * `clear` or `cls` will clear the screen.

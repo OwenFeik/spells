@@ -1,9 +1,12 @@
+import collections
+import time
+
+import roll
+
 import constants
 import cli
 import tracker
 import utilities
-
-import roll
 
 
 class Char:
@@ -35,6 +38,7 @@ class Char:
         )
         self._stats = kwargs.get("stats")
         self.notes = kwargs.get("notes", [])
+        self.roll_history = kwargs.get("roll_history", RollHistory())
 
     def __str__(self):
         klasse_string = ", ".join(
@@ -176,6 +180,17 @@ class Char:
             ns = self.notes
             ns[index + 1], ns[index] = ns[index], ns[index + 1]
 
+    def roll(self, string, single=False):
+        if single:
+            r = roll.get_roll(string)
+            self.roll_history.log_roll(r)
+            return r
+        else:
+            rolls = roll.get_rolls(string)
+            for r in rolls:
+                self.roll_history.log_roll(r)
+            return rolls
+
     def to_json(self):
         return {
             "name": self.name,
@@ -186,6 +201,7 @@ class Char:
             "skills": self.skills.to_json(),
             "stats": self._stats.to_json() if self._stats is not None else None,
             "notes": self.notes,
+            "roll_history": self.roll_history.to_json(),
         }
 
     @staticmethod
@@ -222,6 +238,9 @@ class Char:
 
         if "skills" in data:
             data["skills"] = Skills.from_json(data["skills"])
+
+        if "roll_history" in data:
+            data["roll_history"] = RollHistory.from_json(data["roll_history"])
 
         return Char(**data)
 
@@ -446,7 +465,7 @@ class Skill:
     def skill_str(self, char=None):
         string = f"{self.prof_str()} {self.name}"
         if char:
-            string += f" ({self.mod_str(char)})"
+            string += " " + self.mod_str(char)
         return string
 
     def bonus(self, char):
@@ -472,7 +491,7 @@ class Skill:
             roll_string += f" {bonus}"
 
         return f"{self.name} check:\n" + roll.rolls_string(
-            roll.get_rolls(roll_string)
+            char.roll(roll_string)
         )
 
     def toggle_proficiency(self):
@@ -608,10 +627,10 @@ class Skills:
             for skill in skills:
                 if skill.stat != prev_stat:
                     mod = utilities.mod_str(char.stats.mod(skill.stat))
-                    table.append(f"{skill.stat.upper()} ({mod})")
+                    table.append(f"{skill.stat.upper()} {mod}")
                     prev_stat = skill.stat
                 table.append(
-                    [skill.prof_str(), skill.name, f"({skill.mod_str(char)})"]
+                    [skill.prof_str(), skill.name, skill.mod_str(char)]
                 )
 
         normal = []
@@ -626,7 +645,7 @@ class Skills:
         table.append("\nSpecial:")
         add_table_rows(special)
 
-        return "\n" + cli.format_table(table, "\t")
+        return cli.format_table(table, "\t")
 
     def sort_skills(self):
         # Order skills in the traditional stat order, then alphabetically
@@ -688,3 +707,50 @@ class Skills:
     @staticmethod
     def from_json(data):
         return Skills([Skill.from_json(skill) for skill in data["skills"]])
+
+
+class RollHistory:
+    DEFAULT_SIZES = [4, 6, 8, 10, 12, 20]
+
+    def __init__(self, rolls=None):
+        self.rolls = rolls or collections.defaultdict(lambda: [])
+
+    def log_roll(self, robj):
+        for (r, results) in robj.roll_info():
+            _, die = r.split(roll.RollToken.SEPERATOR)
+            self.rolls[int(die)].append((results, time.time()))
+
+    def rolls_before(self, die, start_time):
+        return [
+            r
+            for (results, t) in self.rolls[die]
+            if t >= start_time
+            for r in results
+        ]
+
+    def stat_string(self, start_time=0):
+        table = []
+        for die in RollHistory.DEFAULT_SIZES:
+            rolls = self.rolls_before(die, start_time)
+            if rolls:
+                avg = round(sum(rolls) / len(rolls), 2)
+                delta = round((avg - (1 + die) / 2), 2)
+                delta_str = utilities.mod_str(delta) if delta else "(avg)"
+            else:
+                avg = 0.0
+                delta_str = "(avg)"
+            table.append(
+                [f"{roll.RollToken.SEPERATOR}{die}", str(avg), delta_str]
+            )
+        return cli.format_table(table)
+
+    def to_json(self):
+        return {"rolls": self.rolls}
+
+    @staticmethod
+    def from_json(data):
+        return RollHistory(
+            collections.defaultdict(
+                lambda: [], {int(k): v for k, v in data["rolls"].items()}
+            )
+        )

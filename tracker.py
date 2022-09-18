@@ -184,8 +184,10 @@ class TrackerCommand:
             and args[1].isnumeric()
         ):
             quantity = int(args[1])
-        elif rolls := roll.get_rolls(" ".join(args), max_qty=1):
-            quantity = rolls[0].total
+        elif (character and (roll := character.roll(" ".join(args), True))) or (
+            roll := roll.get_roll(" ".join(args), max_qty=1)
+        ):
+            quantity = roll.total
         else:
             return TrackerCommand.MISSING_ARG_MESSAGE
 
