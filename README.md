@@ -136,6 +136,9 @@ A few intuitive `<skill>` shortcut names are included by default, but if these
 are undesired they can be removed by deleting and recreating the relevant
 skills. 
 
+Plain skill checks can be performed by using that skills three letter prefix,
+for example `sc int a` to perform an intelligence check with advantage.
+
 ### Using Trackers
 
 Once you have created a character, you can use "trackers". These are simple
@@ -229,9 +232,9 @@ option.
 
 If n is omitted, a value of 1 is assumed. A variety of more advanced syntax
 options for rolling are available. The specification followed is:
-`
+```
 <const> <operation> <n>d<size><advstr> <mods> k<keep>
-`
+````
 Where
 
 * `const` is an integer

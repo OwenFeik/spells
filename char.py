@@ -602,6 +602,20 @@ class Skills:
             if not all(c in ["a", "d"] for c in adv_str):
                 return 'Usage: "sc <skill_name> a" or "sc <skill_name> d".'
 
+        if context.get_arg(0):
+            stat = context.get_arg(0).upper()
+            if stat.lower() in Stats.DND_STATS:
+                mod = context.character.stats.mod(stat)
+                roll_string = "d20" + (adv_str or "")
+                if mod > 0:
+                    roll_string += f" + {mod}"
+                elif mod < 0:
+                    roll_string += f" {mod}"
+                
+                return f"{stat} check:\n" + roll.rolls_string(
+                    context.character.roll(roll_string)
+                )
+
         try:
             return self.skill_from_context(context).check(
                 context.character, adv_str
