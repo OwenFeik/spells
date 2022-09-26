@@ -426,6 +426,8 @@ def roll_stats(context):
         print(f"Cleared roll stats for {context.character.name}.")
         return
 
+    die_idx = 2
+
     start = time.time()
     unit = context.get_arg(1)
     if unit == "day":
@@ -436,6 +438,11 @@ def roll_stats(context):
         start -= 60 * 60 * 24 * 7
     elif unit == "year":
         start -= 60 * 60 * 24 * 365
+    elif unit and (
+        unit.isnumeric() or unit.startswith("d") and unit[1:].isnumeric()
+    ):
+        start = 0
+        die_idx = 1
     else:
         if unit:
             print(
@@ -444,7 +451,14 @@ def roll_stats(context):
             )
         start = 0
 
-    print(context.character.roll_history.stat_string(start))
+    die = []
+    for arg in context.args[die_idx:]:
+        if arg.isnumeric():
+            die.append(int(arg))
+        elif arg[0].startswith("d") and arg[1:].isnumeric():
+            die.append(int(arg[1:]))
+
+    print(context.character.roll_history.stat_string(start, die))
 
 
 def roll_dice(context):

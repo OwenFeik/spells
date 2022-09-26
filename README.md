@@ -283,6 +283,11 @@ alongside that character, to enable the following `stats` commands.
 * `roll stats <period>` where `<period>` is one of `day`, `week`, `month` or
     `year`, which will do the same but limiting to rolls from the past day,
     week, etc.
+* `roll stats <die> [<die> ... <die>]` to filter for one or more die sizes to
+    show stats for. This can include die outside the usual RPG die. All die
+    specified will be shown.
+* `roll stats <period> <die> [<die> ... <die>]` to filter on time and include
+    specific die.
 * `roll stats clear` will clear all stored stats.
 
 ### Other

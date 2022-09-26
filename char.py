@@ -728,9 +728,9 @@ class RollHistory:
             for r in results
         ]
 
-    def stat_string(self, start_time=0):
+    def stat_string(self, start_time=0, die=None):
         table = []
-        for die in RollHistory.DEFAULT_SIZES:
+        for die in die or RollHistory.DEFAULT_SIZES:
             rolls = self.rolls_before(die, start_time)
             if rolls:
                 avg = round(sum(rolls) / len(rolls), 2)
@@ -740,7 +740,12 @@ class RollHistory:
                 avg = 0.0
                 delta_str = "(avg)"
             table.append(
-                [f"{roll.RollToken.SEPERATOR}{die}", str(avg), delta_str]
+                [
+                    f"{roll.RollToken.SEPERATOR}{die}",
+                    f"{str(len(rolls))} rolled",
+                    str(avg),
+                    delta_str,
+                ]
             )
         return cli.format_table(table)
 
