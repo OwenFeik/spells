@@ -397,15 +397,28 @@ def rename(context):
 
 
 def reroll(context):
-    if not isinstance(context.previous_roll, roll.RollExpr):
-        print("I don't know how to reroll bracketed expressions.")
+    if not context.previous_roll:
+        print("No previous roll to reroll.")
         return
+
+    rolls = []
+    frontier = [context.previous_roll]
+    while frontier:
+        next_frontier = []
+        for expr in frontier:
+            if isinstance(expr, roll.RollExpr):
+                rolls.append(expr)
+            elif hasattr(expr, "exprs"):
+                next_frontier.extend(expr.exprs)
+        frontier = next_frontier
+
+    to_reroll = max(rolls, key=lambda r: r.qty)
 
     n = context.get_arg(0)
     if n.isnumeric():
-        old_total = context.previous_roll.total
-        context.previous_roll.reroll(int(n))
-        delta = context.previous_roll.total - old_total
+        old_total = to_reroll.total
+        to_reroll.reroll(int(n))
+        delta = to_reroll.total - old_total
         delta_string = ("+" if delta > 0 else "") + str(delta)
         print(context.previous_roll.full_str() + f" ({delta_string})")
     else:
@@ -652,7 +665,7 @@ def update_required(_=None):
         if result:
             print("Update required.")
         else:
-            print("Already update to date.")
+            print("Already up to date.")
 
         return result
 

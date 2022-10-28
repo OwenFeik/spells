@@ -611,7 +611,7 @@ class Skills:
                     roll_string += f" + {mod}"
                 elif mod < 0:
                     roll_string += f" {mod}"
-                
+
                 return f"{stat} check:\n" + roll.rolls_string(
                     context.character.roll(roll_string)
                 )
