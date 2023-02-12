@@ -1,6 +1,5 @@
 import os  # Clear screen
 import difflib
-from re import sub  # Suggest similar commands
 import subprocess
 
 
@@ -177,3 +176,18 @@ def mod_str(mod):
         return f"(+{mod})"
     else:
         return f"({mod})"
+
+
+def func_options(options):
+    """
+    Given a list [(title, func)], print out the numbered titles and return the
+    context options update.
+    """
+    titles = []
+    funcs = []
+    for title, func in options:
+        titles.append(title)
+        funcs.append(func)
+
+    print("\n" + " ".join(f"[{i + 1}] {t}" for i, t in enumerate(titles)))
+    return ("func", funcs)

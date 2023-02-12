@@ -46,6 +46,18 @@ def common_tracker_handling(context):
 # Commands
 
 
+def attack(context):
+    print(
+        context.character.attacks.add_template(
+            context.arg_text, context.character
+        )
+    )
+
+
+def attacks(context):
+    context.update_options(context.character.attacks.list(context.character))
+
+
 def cast(context):
     if not context.character_check():
         print('To cast spells, start a character with "char".')
@@ -130,6 +142,11 @@ def tracker_collection(context):
         print(f"Created tracker collection {name}.")
     else:
         print('Usage: "tc <name>".')
+
+
+@needschar
+def delattack(context):
+    context.update_options(context.character.attacks.list_deletes())
 
 
 def delchar(context):
@@ -316,11 +333,7 @@ def note(context):
                     )
                 )
 
-            print(
-                "\n"
-                + " ".join(f"[{i + 1}] {k}" for i, (k, _) in enumerate(options))
-            )
-            context.update_options(("func", list(f for _, f in options)))
+            context.update_options(utilities.func_options(options))
         else:
             print(
                 f"You only have {len(context.character.notes)} notes"
@@ -710,6 +723,8 @@ def update(context):
 
 
 mapping = {
+    "attack": attack,
+    "attacks": attacks,
     "c": cast,
     "cast": cast,
     "ch": character,
@@ -720,6 +735,7 @@ mapping = {
     "clear": clear_screen,
     "cls": clear_screen,
     "collection": tracker_collection,
+    "delattack": delattack,
     "delchar": delchar,
     "delskill": delskill,
     "deltracker": deltracker,
