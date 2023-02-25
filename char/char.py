@@ -183,7 +183,15 @@ class Char:
             ns = self.notes
             ns[index + 1], ns[index] = ns[index], ns[index + 1]
 
+    def apply_template(self, template):
+        template = template.lower()
+        for stat in Stats.DND_STATS:
+            mod = self.stats.mod(stat)
+            template = template.replace(stat.lower(), str(mod))
+        return template.replace("prof", str(self.proficiency_bonus))
+
     def roll(self, string, single=False):
+        string = self.apply_template(string)
         if single:
             r = roll.get_roll(string)
             self.roll_history.log_roll(r)
