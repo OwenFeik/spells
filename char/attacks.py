@@ -39,8 +39,8 @@ class Attacks:
         return (
             "func",
             [
-                lambda: self.attack(template, character)
-                for template in self.templates
+                (lambda i: lambda: self.attack(self.templates[i], character))(i)
+                for i in range(len(self.templates))
             ],
         )
 
@@ -49,8 +49,8 @@ class Attacks:
         return (
             "func",
             [
-                lambda: self.templates.remove(template)
-                for template in self.templates
+                (lambda i: lambda: self.templates.remove(self.templates[i]))(i)
+                for i in range(len(self.templates))
             ],
         )
 
