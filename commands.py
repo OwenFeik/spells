@@ -347,6 +347,7 @@ def note(context):
             context.character.add_note(note)
 
 
+@needschar
 def notes(context):
     cli.print_list(
         "Notes: ",

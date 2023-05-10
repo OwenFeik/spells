@@ -91,14 +91,13 @@ class Context:
 
     def character_check(self, new_char=False):
         if (
-            not self.character
+            (not self.character)
             and new_char
             and cli.get_decision(
                 "No current character, which is required for this action. "
                 " Create a temporary character?"
             )
         ):
-
             self.character = char.Char()
             print(
                 'Rename your character with "rename <name>" and add '
@@ -122,8 +121,8 @@ class Context:
         self.save_file = ""
 
     # breadth first search of tracker tree to find tracker with name
-    def get_tracker(self, name=None, root=None, names=None):
-        if not self.character_check(True):
+    def get_tracker(self, name=None, root=None, names=None, new_char=False):
+        if not self.character_check(new_char=new_char):
             return None
 
         if names is None:
@@ -187,7 +186,7 @@ class Context:
             if self.command in commands.mapping:
                 commands.mapping[self.command](self)
                 return
-            elif t := self.get_tracker(self.command):
+            elif t := self.get_tracker(self.command, new_char=False):
                 if self.args:
                     print(t.handle_command(self))
                 else:
